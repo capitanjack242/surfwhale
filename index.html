@@ -105,6 +105,57 @@
     box-shadow: 0 0 0 3px rgba(78,205,196,0.2);
   }
 
+  section.lookup { padding: 40px 0 80px; }
+  .lookup-panel {
+    max-width: 640px;
+    margin: 0 auto;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 36px;
+  }
+  .lookup-panel form { display: flex; gap: 12px; }
+  .lookup-panel input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-size: 15px;
+    font-family: inherit;
+  }
+  .lookup-panel input:focus { outline: 1px solid var(--teal); }
+  .lookup-panel button {
+    background: linear-gradient(135deg, var(--sunset-1), var(--sunset-3));
+    border: none;
+    border-radius: 10px;
+    padding: 12px 22px;
+    color: #0b0e11;
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .lookup-panel button:hover { opacity: 0.9; }
+  .lookup-status { color: var(--muted); font-size: 14px; margin: 20px 0 0; }
+  .lookup-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 16px;
+    margin-top: 24px;
+  }
+  .lookup-stats .stat {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .lookup-stats .stat-label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .lookup-stats .stat-value { display: block; font-size: 18px; font-weight: 700; }
+  .lookup-stats .stat-value.pos { color: var(--teal); }
+  .lookup-stats .stat-value.neg { color: var(--sunset-2); }
+
   section.features { padding: 40px 0 80px; }
   .section-label {
     text-align: center;
@@ -211,6 +262,7 @@
         <span>Surf Whale</span>
       </div>
       <nav>
+        <a href="#lookup">Look up a wallet</a>
         <a href="#features">Features</a>
         <a href="#how">How it works</a>
       </nav>
@@ -225,6 +277,20 @@
       <h1>Swim with the sharks<br/>or surf with the whales?</h1>
       <p class="sub">Surf Whale tracks Hyperliquid's biggest traders in real time — who's actually winning, how they trade, and what it would look like to follow them.</p>
       <div class="badge">🌊 In development — full launch coming soon</div>
+    </div>
+  </section>
+
+  <section class="lookup" id="lookup">
+    <div class="wrap">
+      <div class="section-label">Try it now</div>
+      <h2 class="section-title">Look up any Hyperliquid wallet</h2>
+      <div class="lookup-panel">
+        <form id="lookup-form">
+          <input type="text" id="lookup-address" placeholder="0x..." autocomplete="off" spellcheck="false" />
+          <button type="submit">Look up</button>
+        </form>
+        <div id="lookup-result"></div>
+      </div>
     </div>
   </section>
 
@@ -311,5 +377,48 @@
     </footer>
   </div>
 
+  <script>
+    const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+      ? 'http://localhost:8001'
+      : 'https://api.surfwhale.io';
+
+    const fmtUsd = (n) => n == null ? '—' : '$' + Number(n).toLocaleString(undefined, { maximumFractionDigits: 0 });
+    const fmtPct = (n) => n == null ? '—' : (n * 100).toFixed(1) + '%';
+    const cls = (n) => n == null ? '' : (n >= 0 ? 'pos' : 'neg');
+
+    const form = document.getElementById('lookup-form');
+    const input = document.getElementById('lookup-address');
+    const resultEl = document.getElementById('lookup-result');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const address = input.value.trim();
+      resultEl.innerHTML = '<p class="lookup-status">Looking up…</p>';
+      try {
+        const res = await fetch(`${API_BASE}/api/public/wallet/${address}`);
+        if (res.status === 429) {
+          resultEl.innerHTML = '<p class="lookup-status">Too many lookups from this browser — try again in a bit.</p>';
+          return;
+        }
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          resultEl.innerHTML = `<p class="lookup-status">${body.detail || 'Could not find that wallet.'}</p>`;
+          return;
+        }
+        const d = await res.json();
+        resultEl.innerHTML = `
+          <div class="lookup-stats">
+            <div class="stat"><span class="stat-label">Net worth</span><span class="stat-value">${fmtUsd(d.net_worth)}</span></div>
+            <div class="stat"><span class="stat-label">Win rate</span><span class="stat-value">${fmtPct(d.win_rate)}</span></div>
+            <div class="stat"><span class="stat-label">Trades</span><span class="stat-value">${d.trade_count ?? '—'}</span></div>
+            <div class="stat"><span class="stat-label">Annualized return</span><span class="stat-value ${cls(d.annualized_return)}">${fmtPct(d.annualized_return)}</span></div>
+            <div class="stat"><span class="stat-label">Funding-only return</span><span class="stat-value ${cls(d.funding_annualized_return)}">${fmtPct(d.funding_annualized_return)}</span></div>
+          </div>
+        `;
+      } catch (err) {
+        resultEl.innerHTML = '<p class="lookup-status">Could not reach the lookup service — it may still be coming online.</p>';
+      }
+    });
+  </script>
 </body>
 </html>
