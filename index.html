@@ -411,9 +411,11 @@
             <div class="stat"><span class="stat-label">Net worth</span><span class="stat-value">${fmtUsd(d.net_worth)}</span></div>
             <div class="stat"><span class="stat-label">Win rate</span><span class="stat-value">${fmtPct(d.win_rate)}</span></div>
             <div class="stat"><span class="stat-label">Trades</span><span class="stat-value">${d.trade_count ?? '—'}</span></div>
+            <div class="stat"><span class="stat-label">Actual return</span><span class="stat-value ${cls(d.actual_return)}">${fmtPct(d.actual_return)}</span></div>
             <div class="stat"><span class="stat-label">Annualized return</span><span class="stat-value ${cls(d.annualized_return)}">${fmtPct(d.annualized_return)}</span></div>
             <div class="stat"><span class="stat-label">Funding-only return</span><span class="stat-value ${cls(d.funding_annualized_return)}">${fmtPct(d.funding_annualized_return)}</span></div>
           </div>
+          ${d.days != null ? `<p class="lookup-status">Based on ${Math.round(d.days)} days of history.</p>` : ''}
         `;
       } catch (err) {
         resultEl.innerHTML = '<p class="lookup-status">Could not reach the lookup service — it may still be coming online.</p>';
