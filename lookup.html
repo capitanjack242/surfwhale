@@ -130,6 +130,28 @@
   .stat-grid .stat-value.pos { color: var(--teal); }
   .stat-grid .stat-value.neg { color: var(--sunset-2); }
 
+  .metric-table {
+    width: 100%;
+    max-width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-family: ui-monospace, monospace;
+    font-size: 13px;
+  }
+  .metric-table th, .metric-table td {
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .metric-table th { color: var(--muted); font-weight: 500; font-size: 11px; text-transform: uppercase; }
+  .metric-table th:first-child, .metric-table td:first-child { width: 40%; color: var(--muted); }
+  .metric-table th:not(:first-child), .metric-table td:not(:first-child) { width: 20%; text-align: right; }
+  .metric-table td:first-child { color: var(--text); }
+  .metric-table .section-row td { color: var(--text); font-weight: 600; padding-top: 16px; border-bottom: none; }
+  .metric-table .pos { color: var(--teal); }
+  .metric-table .neg { color: var(--sunset-2); }
+  .table-scroll { overflow-x: auto; }
+
   footer {
     border-top: 1px solid var(--border);
     padding: 28px 0;
@@ -203,10 +225,78 @@
       : 'https://api.surfwhale.io';
 
     const fmtUsd = (n) => n == null ? '—' : '$' + Number(n).toLocaleString(undefined, { maximumFractionDigits: 0 });
-    const fmtUsdSigned = (n) => n == null ? '—' : (n >= 0 ? '$' : '-$') + Math.abs(Number(n)).toLocaleString(undefined, { maximumFractionDigits: 0 });
     const fmtPct = (n) => n == null ? '—' : (n * 100).toFixed(1) + '%';
-    const fmtNum = (n, d = 2) => n == null ? '—' : Number(n).toFixed(d);
     const cls = (n) => n == null ? '' : (n >= 0 ? 'pos' : 'neg');
+
+    // Mirrors the internal Trade Performance tab's own row list/formatting
+    // exactly, so a wallet looks the same whether viewed on the public site
+    // or the internal dashboard.
+    const fmt2 = (n, d = 2) => n == null ? '—' : Number(n).toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d });
+    const fmtInt = (n) => n == null ? '—' : Number(n).toLocaleString();
+    const fmtPct2 = (n) => n == null ? '—' : (n * 100).toFixed(2) + '%';
+    const fmtUsdSigned = (n) => n == null ? '—' : (n < 0 ? `($${fmt2(Math.abs(n))})` : `$${fmt2(n)}`);
+    const fmtRatio = (n) => n == null ? '—' : Number(n).toFixed(2);
+
+    const PERFORMANCE_ROWS = [
+      { label: 'Total net profit', key: 'net_profit', fmt: fmtUsdSigned, colored: true },
+      { label: 'Gross profit', key: 'gross_profit', fmt: fmtUsdSigned, colored: true },
+      { label: 'Gross loss', key: 'gross_loss', fmt: fmtUsdSigned, colored: true },
+      { label: 'Commission', key: 'commission', fmt: fmtUsdSigned },
+      { label: 'Profit factor', key: 'profit_factor', fmt: fmtRatio },
+      { label: 'Max. drawdown', key: 'max_drawdown', fmt: fmtUsdSigned, colored: true },
+      { label: 'Sharpe ratio', key: 'sharpe_ratio', fmt: fmtRatio, colored: true },
+      { label: 'Sortino ratio', key: 'sortino_ratio', fmt: fmtRatio, colored: true },
+      { label: 'Ulcer index', key: 'ulcer_index', fmt: fmtRatio },
+      { section: true, label: 'Trades' },
+      { label: 'Total # of trades', key: 'total_trades', fmt: fmtInt },
+      { label: 'Percent profitable', key: 'percent_profitable', fmt: fmtPct2 },
+      { label: '# of winning trades', key: 'win_count', fmt: fmtInt },
+      { label: '# of losing trades', key: 'loss_count', fmt: fmtInt },
+      { label: '# of even trades', key: 'even_count', fmt: fmtInt },
+      { section: true, label: 'Averages' },
+      { label: 'Avg. trade', key: 'avg_trade', fmt: fmtUsdSigned, colored: true },
+      { label: 'Avg. winning trade', key: 'avg_win', fmt: fmtUsdSigned, colored: true },
+      { label: 'Avg. losing trade', key: 'avg_loss', fmt: fmtUsdSigned, colored: true },
+      { label: 'Ratio avg win / avg loss', key: 'ratio_win_loss', fmt: fmtRatio },
+      { section: true, label: 'Streaks' },
+      { label: 'Max consec. winners', key: 'max_consecutive_wins', fmt: fmtInt },
+      { label: 'Max consec. losers', key: 'max_consecutive_losses', fmt: fmtInt },
+      { label: 'Largest winning trade', key: 'largest_win', fmt: fmtUsdSigned, colored: true },
+      { label: 'Largest losing trade', key: 'largest_loss', fmt: fmtUsdSigned, colored: true },
+      { section: true, label: 'Frequency' },
+      { label: 'Avg. # of trades per day', key: 'avg_trades_per_day', fmt: fmtRatio },
+      { label: 'Profit per month', key: 'profit_per_month', fmt: fmtUsdSigned, colored: true },
+      { label: 'Max days to recover', key: 'max_days_to_recover', fmt: fmtInt },
+      { label: 'Longest flat period (days)', key: 'longest_flat_days', fmt: fmtInt },
+    ];
+
+    function renderPerformanceTable(p) {
+      const start = p.period_start ? new Date(p.period_start).toLocaleDateString() : '—';
+      const end = p.period_end ? new Date(p.period_end).toLocaleDateString() : '—';
+      const all = p.all || {}, long = p.long || {}, short = p.short || {};
+      const rows = PERFORMANCE_ROWS.map(r => {
+        if (r.section) {
+          return `<tr class="section-row"><td colspan="4">${r.label}</td></tr>`;
+        }
+        const a = all[r.key], l = long[r.key], s = short[r.key];
+        return `<tr>
+          <td>${r.label}</td>
+          <td class="${r.colored ? cls(a) : ''}">${r.fmt(a)}</td>
+          <td class="${r.colored ? cls(l) : ''}">${r.fmt(l)}</td>
+          <td class="${r.colored ? cls(s) : ''}">${r.fmt(s)}</td>
+        </tr>`;
+      }).join('');
+
+      return `
+        <h3>Performance — ${start} to ${end}</h3>
+        <div class="table-scroll">
+          <table class="metric-table">
+            <thead><tr><th>Performance</th><th>All trades</th><th>Long trades</th><th>Short trades</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+    }
 
     const form = document.getElementById('lookup-form');
     const input = document.getElementById('lookup-address');
@@ -241,22 +331,7 @@
             ${d.days != null ? `<p class="lookup-status">Based on ${Math.round(d.days)} days of history.</p>` : ''}
           </div>
           <div class="result-section">
-            <h3>Trade Performance</h3>
-            <div class="stat-grid">
-              <div class="stat"><span class="stat-label">Net profit</span><span class="stat-value ${cls(p.net_profit)}">${fmtUsdSigned(p.net_profit)}</span></div>
-              <div class="stat"><span class="stat-label">Profit factor</span><span class="stat-value">${fmtNum(p.profit_factor)}</span></div>
-              <div class="stat"><span class="stat-label">Gross profit</span><span class="stat-value pos">${fmtUsdSigned(p.gross_profit)}</span></div>
-              <div class="stat"><span class="stat-label">Gross loss</span><span class="stat-value neg">${fmtUsdSigned(p.gross_loss)}</span></div>
-              <div class="stat"><span class="stat-label">Avg win</span><span class="stat-value pos">${fmtUsdSigned(p.avg_win)}</span></div>
-              <div class="stat"><span class="stat-label">Avg loss</span><span class="stat-value neg">${fmtUsdSigned(p.avg_loss)}</span></div>
-              <div class="stat"><span class="stat-label">Largest win</span><span class="stat-value pos">${fmtUsdSigned(p.largest_win)}</span></div>
-              <div class="stat"><span class="stat-label">Largest loss</span><span class="stat-value neg">${fmtUsdSigned(p.largest_loss)}</span></div>
-              <div class="stat"><span class="stat-label">Max drawdown</span><span class="stat-value neg">${fmtUsdSigned(p.max_drawdown)}</span></div>
-              <div class="stat"><span class="stat-label">Sharpe ratio</span><span class="stat-value ${cls(p.sharpe_ratio)}">${fmtNum(p.sharpe_ratio)}</span></div>
-              <div class="stat"><span class="stat-label">Sortino ratio</span><span class="stat-value ${cls(p.sortino_ratio)}">${fmtNum(p.sortino_ratio)}</span></div>
-              <div class="stat"><span class="stat-label">Max consecutive wins</span><span class="stat-value">${p.max_consecutive_wins ?? '—'}</span></div>
-              <div class="stat"><span class="stat-label">Max consecutive losses</span><span class="stat-value">${p.max_consecutive_losses ?? '—'}</span></div>
-            </div>
+            ${renderPerformanceTable(p)}
           </div>
         `;
       } catch (err) {
