@@ -39,6 +39,7 @@
   .brand { display: flex; align-items: center; gap: 12px; }
   .brand img { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; }
   .brand span { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+  .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
   header nav a {
     text-decoration: none;
     color: var(--muted);
@@ -46,6 +47,27 @@
     margin-left: 28px;
   }
   header nav a:hover { color: var(--text); }
+  .verified-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 999px;
+  }
+  .verified-badge .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--teal);
+    box-shadow: 0 0 0 3px rgba(78,205,196,0.2);
+  }
+  .verified-badge b { color: var(--text); font-weight: 700; }
+
+  @media (max-width: 600px) {
+    .header-right { display: none; }
+  }
 
   .hero {
     text-align: center;
@@ -264,11 +286,16 @@
         <img src="assets/logo.jpg" alt="Surf Whale" />
         <span>Surf Whale</span>
       </div>
-      <nav>
-        <a href="#lookup">Look up a wallet</a>
-        <a href="#features">Features</a>
-        <a href="#how">How it works</a>
-      </nav>
+      <div class="header-right">
+        <nav>
+          <a href="#lookup">Look up a wallet</a>
+          <a href="#features">Features</a>
+          <a href="#how">How it works</a>
+        </nav>
+        <div class="verified-badge" id="verified-badge">
+          <span class="dot"></span> Verified Whale Count: <b id="verified-count">—</b>
+        </div>
+      </div>
     </header>
   </div>
 
@@ -399,6 +426,15 @@
     const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
       ? 'http://localhost:8001'
       : 'https://api.surfwhale.io';
+
+    fetch(`${API_BASE}/api/public/stats`)
+      .then(res => res.ok ? res.json() : Promise.reject(res.status))
+      .then(d => {
+        document.getElementById('verified-count').textContent = d.verified_whale_count.toLocaleString();
+      })
+      .catch(() => {
+        document.getElementById('verified-badge').style.display = 'none';
+      });
 
     const fmtUsd = (n) => n == null ? '—' : '$' + Number(n).toLocaleString(undefined, { maximumFractionDigits: 0 });
     const fmtPct = (n) => n == null ? '—' : (n * 100).toFixed(1) + '%';
