@@ -114,6 +114,17 @@
   .dim { color: var(--faint); }
   .empty-row td, .loading-row td { text-align: center; color: var(--faint); padding: 32px; }
 
+  tbody tr.row-clickable { cursor: pointer; }
+  .chevron { display: inline-block; width: 12px; color: var(--faint); font-size: 10px; margin-right: 4px; transition: transform 0.12s; }
+  .chevron.open { transform: rotate(90deg); }
+  .detail-row td { background: var(--panel-2); padding: 16px 18px; border-bottom: 1px solid var(--border); }
+  .detail-wrap { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+  .detail-chart { flex: 1 1 420px; }
+  .detail-stats { flex: 0 0 200px; display: flex; flex-direction: column; gap: 6px; }
+  .detail-stats .stat-label { color: var(--faint); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .detail-stats .stat-value { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .detail-loading { color: var(--faint); font-size: 13px; padding: 8px 0; }
+
   footer { margin-top: 18px; color: var(--faint); font-size: 12px; }
 
   ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -214,6 +225,7 @@ async function fetchDex(dex) {
     const oiCoins = parseFloat(c.openInterest || 0);
     return {
       coin: name,
+      hlName: u.name,
       category: dex ? categorize(name) : 'Crypto',
       fundingHr: funding * 100,
       apr: funding * 24 * 365 * 100,
@@ -228,6 +240,125 @@ let ROWS = [];
 let sortKey = 'apr';
 let sortDir = -1;
 let activeCategory = 'All';
+let expandedHlName = null;
+const historyCache = {}; // hlName -> array of {time, apr}
+
+const HISTORY_WINDOW_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+async function fetchHistory(hlName) {
+  const startTime = Date.now() - HISTORY_WINDOW_MS;
+  const res = await fetch(HL_INFO_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type: 'fundingHistory', coin: hlName, startTime })
+  });
+  if (!res.ok) throw new Error('history fetch failed (' + res.status + ')');
+  const raw = await res.json();
+  const points = raw.map(p => ({
+    time: p.time,
+    apr: parseFloat(p.fundingRate) * 24 * 365 * 100
+  }));
+  historyCache[hlName] = points;
+  return points;
+}
+
+function drawSparkline(canvas, points) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width = canvas.clientWidth * 2;
+  const h = canvas.height = canvas.clientHeight * 2;
+  ctx.scale(1, 1);
+  ctx.clearRect(0, 0, w, h);
+  if (points.length < 2) {
+    ctx.fillStyle = '#5c6570';
+    ctx.font = '20px -apple-system, sans-serif';
+    ctx.fillText('Not enough history yet', 12, h/2);
+    return;
+  }
+  const aprs = points.map(p => p.apr);
+  let min = Math.min(...aprs, 0);
+  let max = Math.max(...aprs, 0);
+  if (min === max) { min -= 1; max += 1; }
+  const padX = 12, padY = 16;
+  const plotW = w - padX * 2, plotH = h - padY * 2;
+  const x = i => padX + (i / (points.length - 1)) * plotW;
+  const y = v => padY + plotH - ((v - min) / (max - min)) * plotH;
+
+  // zero line
+  ctx.strokeStyle = '#33383f';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(padX, y(0));
+  ctx.lineTo(w - padX, y(0));
+  ctx.stroke();
+
+  // area fill
+  const grad = ctx.createLinearGradient(0, padY, 0, h - padY);
+  grad.addColorStop(0, 'rgba(78,205,196,0.25)');
+  grad.addColorStop(1, 'rgba(78,205,196,0)');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.moveTo(x(0), y(points[0].apr));
+  points.forEach((p, i) => ctx.lineTo(x(i), y(p.apr)));
+  ctx.lineTo(x(points.length - 1), y(0));
+  ctx.lineTo(x(0), y(0));
+  ctx.closePath();
+  ctx.fill();
+
+  // line
+  ctx.strokeStyle = '#4ecdc4';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  points.forEach((p, i) => i === 0 ? ctx.moveTo(x(i), y(p.apr)) : ctx.lineTo(x(i), y(p.apr)));
+  ctx.stroke();
+
+  // endpoint dot
+  const lastI = points.length - 1;
+  ctx.fillStyle = '#4ecdc4';
+  ctx.beginPath();
+  ctx.arc(x(lastI), y(points[lastI].apr), 5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // min/max labels
+  ctx.fillStyle = '#8a939d';
+  ctx.font = '22px -apple-system, sans-serif';
+  ctx.textBaseline = 'top';
+  ctx.fillText(max.toFixed(1) + '%', padX, padY - 14 >= 0 ? 2 : 2);
+  ctx.textBaseline = 'bottom';
+  ctx.fillText(min.toFixed(1) + '%', padX, h - 2);
+}
+
+async function toggleExpand(hlName, tr) {
+  if (expandedHlName === hlName) {
+    expandedHlName = null;
+  } else {
+    expandedHlName = hlName;
+  }
+  render();
+}
+
+async function loadAndDrawHistory(hlName) {
+  const canvas = document.getElementById('spark-' + cssEscape(hlName));
+  const statsBox = document.getElementById('stats-' + cssEscape(hlName));
+  if (!canvas) return;
+  try {
+    const points = historyCache[hlName] || await fetchHistory(hlName);
+    drawSparkline(canvas, points);
+    if (points.length > 0) {
+      const aprs = points.map(p => p.apr);
+      const avg = aprs.reduce((a,b) => a+b, 0) / aprs.length;
+      const min = Math.min(...aprs), max = Math.max(...aprs);
+      const days = ((points[points.length-1].time - points[0].time) / 86400000).toFixed(1);
+      statsBox.innerHTML =
+        '<div class="stat-label">7-day avg APR</div><div class="stat-value">' + fmtPct(avg, 2) + '</div>' +
+        '<div class="stat-label" style="margin-top:8px">Range</div><div class="stat-value">' + fmtPct(min, 1) + ' to ' + fmtPct(max, 1) + '</div>' +
+        '<div class="stat-label" style="margin-top:8px">History span</div><div class="stat-value">' + days + ' days, ' + points.length + ' hrs</div>';
+    }
+  } catch (e) {
+    if (statsBox) statsBox.innerHTML = '<div class="detail-loading">Could not load history: ' + e.message + '</div>';
+  }
+}
+
+function cssEscape(s) { return s.replace(/[^a-zA-Z0-9]/g, '_'); }
 
 const CATEGORY_COLORS = {
   Crypto: 'var(--teal)', Stock: 'var(--sunset-2)', Commodity: '#eab308',
@@ -284,8 +415,10 @@ function render() {
 
   tbody.innerHTML = rows.map(r => {
     const aprClass = r.apr > 0 ? 'apr-pos' : (r.apr < 0 ? 'apr-neg' : 'apr-zero');
-    return '<tr>' +
-      '<td>' + r.coin + '</td>' +
+    const isOpen = r.hlName === expandedHlName;
+    const chevron = '<span class="chevron' + (isOpen ? ' open' : '') + '">▸</span>';
+    let html = '<tr class="row-clickable" data-hlname="' + r.hlName + '">' +
+      '<td>' + chevron + r.coin + '</td>' +
       '<td style="text-align:left"><span class="cat-tag" style="color:' + (CATEGORY_COLORS[r.category] || 'var(--faint)') + '">' + r.category + '</span></td>' +
       '<td class="dim">' + fmtPct(r.fundingHr, 5) + '</td>' +
       '<td><span class="apr-pill ' + aprClass + '">' + fmtPct(r.apr, 2) + '</span></td>' +
@@ -293,7 +426,26 @@ function render() {
       '<td class="dim">' + fmtUsd(r.vol24h) + '</td>' +
       '<td class="dim">' + fmtUsd(r.oiUsd) + '</td>' +
       '</tr>';
+    if (isOpen) {
+      const escaped = cssEscape(r.hlName);
+      html += '<tr class="detail-row"><td colspan="7">' +
+        '<div class="detail-wrap">' +
+          '<div class="detail-chart"><canvas id="spark-' + escaped + '" style="width:100%;height:120px;display:block;"></canvas>' +
+          '<div style="color:var(--faint);font-size:11px;margin-top:4px;">Hourly funding, annualized to APR, last 7 days</div></div>' +
+          '<div class="detail-stats" id="stats-' + escaped + '"><div class="detail-loading">Loading history…</div></div>' +
+        '</div>' +
+      '</td></tr>';
+    }
+    return html;
   }).join('');
+
+  tbody.querySelectorAll('tr.row-clickable').forEach(tr => {
+    tr.addEventListener('click', () => toggleExpand(tr.dataset.hlname, tr));
+  });
+
+  if (expandedHlName && rows.some(r => r.hlName === expandedHlName)) {
+    loadAndDrawHistory(expandedHlName);
+  }
 }
 
 document.querySelectorAll('thead th').forEach(th => {
@@ -312,6 +464,10 @@ async function loadData() {
     const [crypto, xyz] = await Promise.all([fetchDex(null), fetchDex('xyz')]);
     ROWS = crypto.concat(xyz);
     document.getElementById('updated-at').textContent = 'updated ' + new Date().toLocaleTimeString();
+    // Force a fresh history fetch (not the cached copy) for whichever symbol is
+    // currently expanded, so its chart stays current on the same hourly cadence
+    // as the rest of the table.
+    if (expandedHlName) delete historyCache[expandedHlName];
     renderChips();
     render();
   } catch (e) {
