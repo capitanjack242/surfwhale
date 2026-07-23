@@ -189,6 +189,9 @@
 
 <script>
 const HL_INFO_URL = 'https://api.hyperliquid.xyz/info';
+const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? 'http://localhost:8001'
+  : 'https://api.surfwhale.io';
 
 const FOREX = new Set(["JPY","EUR","GBP","KRW","DXY"]);
 const COMMODITY = new Set(["GOLD","SILVER","CL","COPPER","NATGAS","URANIUM","ALUMINIUM","PLATINUM","PALLADIUM","BRENTOIL","CORN","WHEAT","TTF"]);
@@ -245,15 +248,28 @@ const historyCache = {}; // hlName -> array of {time, apr}
 
 const HISTORY_WINDOW_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
+const HISTORY_PAGE_SIZE = 500; // Hyperliquid caps fundingHistory at 500 records/call
+
 async function fetchHistory(hlName) {
-  const startTime = Date.now() - HISTORY_WINDOW_MS;
-  const res = await fetch(HL_INFO_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type: 'fundingHistory', coin: hlName, startTime })
-  });
-  if (!res.ok) throw new Error('history fetch failed (' + res.status + ')');
-  const raw = await res.json();
+  const windowStart = Date.now() - HISTORY_WINDOW_MS;
+  let cursor = windowStart;
+  const raw = [];
+  // Paginate forward from the window start until a page comes back under
+  // the 500-record cap (meaning we've reached "now"), so a 30-day window
+  // isn't silently truncated to whatever the first page happened to cover.
+  for (let i = 0; i < 20; i++) {
+    const res = await fetch(HL_INFO_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'fundingHistory', coin: hlName, startTime: cursor })
+    });
+    if (!res.ok) throw new Error('history fetch failed (' + res.status + ')');
+    const page = await res.json();
+    if (page.length === 0) break;
+    raw.push(...page);
+    if (page.length < HISTORY_PAGE_SIZE) break;
+    cursor = page[page.length - 1].time + 1;
+  }
   const points = raw.map(p => ({
     time: p.time,
     apr: parseFloat(p.fundingRate) * 24 * 365 * 100
@@ -341,20 +357,41 @@ async function loadAndDrawHistory(hlName) {
   const statsBox = document.getElementById('stats-' + cssEscape(hlName));
   if (!canvas) return;
   try {
-    const points = historyCache[hlName] || await fetchHistory(hlName);
+    const [points, sinceInception] = await Promise.all([
+      historyCache[hlName] || fetchHistory(hlName),
+      fetchSinceInception(hlName),
+    ]);
     drawSparkline(canvas, points);
+    let html = '';
     if (points.length > 0) {
       const aprs = points.map(p => p.apr);
       const avg = aprs.reduce((a,b) => a+b, 0) / aprs.length;
       const min = Math.min(...aprs), max = Math.max(...aprs);
       const days = ((points[points.length-1].time - points[0].time) / 86400000).toFixed(1);
-      statsBox.innerHTML =
+      html +=
         '<div class="stat-label">30-day avg APR</div><div class="stat-value">' + fmtPct(avg, 2) + '</div>' +
         '<div class="stat-label" style="margin-top:8px">Range</div><div class="stat-value">' + fmtPct(min, 1) + ' to ' + fmtPct(max, 1) + '</div>' +
         '<div class="stat-label" style="margin-top:8px">History span</div><div class="stat-value">' + days + ' days, ' + points.length + ' hrs</div>';
     }
+    if (sinceInception && sinceInception.avg_apr_since_inception != null) {
+      const sinceDate = new Date(sinceInception.since).toLocaleDateString(undefined, {year:'numeric', month:'short', day:'numeric'});
+      html +=
+        '<div class="stat-label" style="margin-top:8px">Avg APR since inception</div><div class="stat-value">' + fmtPct(sinceInception.avg_apr_since_inception, 2) + '</div>' +
+        '<div class="stat-label" style="margin-top:8px">Tracked since</div><div class="stat-value">' + sinceDate + '</div>';
+    }
+    statsBox.innerHTML = html || '<div class="detail-loading">No stats available.</div>';
   } catch (e) {
     if (statsBox) statsBox.innerHTML = '<div class="detail-loading">Could not load history: ' + e.message + '</div>';
+  }
+}
+
+async function fetchSinceInception(hlName) {
+  try {
+    const res = await fetch(`${API_BASE}/api/public/funding-since-inception?hl_name=${encodeURIComponent(hlName)}`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (e) {
+    return null;
   }
 }
 
