@@ -141,7 +141,7 @@
 
     <div class="page-head">
       <h2 style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;">A live, sortable, searchable table of every Hyperliquid perpetual market's funding rate and annualized APR, including crypto, stocks, commodities, forex, and indices.</h2>
-      <div class="eyebrow"><span class="dot"></span> Live &middot; updates every 30s</div>
+      <div class="eyebrow"><span class="dot"></span> Live &middot; updates hourly</div>
       <h1>Funding Rates &amp; APR</h1>
       <p class="sub">Every perpetual market on Hyperliquid — crypto plus the builder-deployed stock, commodity, forex, and index perps — with its current hourly funding rate annualized to APR. Positive APR means longs are paying shorts (crowded long); negative means shorts are paying longs.</p>
     </div>
@@ -321,7 +321,7 @@ async function loadData() {
 }
 
 loadData();
-setInterval(loadData, 30000);
+setInterval(loadData, 3600000);
 </script>
 </body>
 </html>
