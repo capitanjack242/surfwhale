@@ -299,37 +299,55 @@ function drawSparkline(canvas, points) {
   const x = i => padX + (i / (points.length - 1)) * plotW;
   const y = v => padY + plotH - ((v - min) / (max - min)) * plotH;
 
+  const zeroY = y(0);
+  const POSITIVE = '78,205,196';  // teal, rgb
+  const NEGATIVE = '248,113,113'; // red, rgb, matches .apr-neg elsewhere on the page
+
   // zero line
   ctx.strokeStyle = '#33383f';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.moveTo(padX, y(0));
-  ctx.lineTo(w - padX, y(0));
+  ctx.moveTo(padX, zeroY);
+  ctx.lineTo(w - padX, zeroY);
   ctx.stroke();
 
-  // area fill
-  const grad = ctx.createLinearGradient(0, padY, 0, h - padY);
-  grad.addColorStop(0, 'rgba(78,205,196,0.25)');
-  grad.addColorStop(1, 'rgba(78,205,196,0)');
-  ctx.fillStyle = grad;
-  ctx.beginPath();
-  ctx.moveTo(x(0), y(points[0].apr));
-  points.forEach((p, i) => ctx.lineTo(x(i), y(p.apr)));
-  ctx.lineTo(x(points.length - 1), y(0));
-  ctx.lineTo(x(0), y(0));
-  ctx.closePath();
-  ctx.fill();
+  // Draw the same fill+line twice, each clipped to one side of the zero
+  // line, so dips into negative funding read as red without needing to
+  // interpolate the exact zero-crossing point per segment.
+  function drawClipped(rgb, clipTop, clipBottom) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, clipTop, w, clipBottom - clipTop);
+    ctx.clip();
 
-  // line
-  ctx.strokeStyle = '#4ecdc4';
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  points.forEach((p, i) => i === 0 ? ctx.moveTo(x(i), y(p.apr)) : ctx.lineTo(x(i), y(p.apr)));
-  ctx.stroke();
+    const grad = ctx.createLinearGradient(0, padY, 0, h - padY);
+    grad.addColorStop(0, `rgba(${rgb},0.25)`);
+    grad.addColorStop(1, `rgba(${rgb},0)`);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(x(0), y(points[0].apr));
+    points.forEach((p, i) => ctx.lineTo(x(i), y(p.apr)));
+    ctx.lineTo(x(points.length - 1), zeroY);
+    ctx.lineTo(x(0), zeroY);
+    ctx.closePath();
+    ctx.fill();
 
-  // endpoint dot
+    ctx.strokeStyle = `rgb(${rgb})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    points.forEach((p, i) => i === 0 ? ctx.moveTo(x(i), y(p.apr)) : ctx.lineTo(x(i), y(p.apr)));
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  drawClipped(POSITIVE, 0, zeroY);
+  drawClipped(NEGATIVE, zeroY, h);
+
+  // endpoint dot, colored by the sign of the latest value
   const lastI = points.length - 1;
-  ctx.fillStyle = '#4ecdc4';
+  const lastColor = points[lastI].apr >= 0 ? POSITIVE : NEGATIVE;
+  ctx.fillStyle = `rgb(${lastColor})`;
   ctx.beginPath();
   ctx.arc(x(lastI), y(points[lastI].apr), 5, 0, Math.PI * 2);
   ctx.fill();
