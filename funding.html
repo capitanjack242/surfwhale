@@ -174,13 +174,14 @@
             <th data-key="coin" style="text-align:left">Symbol <span class="arrow"></span></th>
             <th data-key="category" style="text-align:left">Type <span class="arrow"></span></th>
             <th data-key="fundingHr">Funding / hr <span class="arrow"></span></th>
-            <th data-key="apr">APR <span class="arrow">▼</span></th>
+            <th data-key="apr">Current APR <span class="arrow">▼</span></th>
+            <th data-key="aprSinceInception">APR Since Inception <span class="arrow"></span></th>
             <th data-key="mark">Mark Price <span class="arrow"></span></th>
             <th data-key="vol24h">24h Volume <span class="arrow"></span></th>
             <th data-key="oiUsd">Open Interest <span class="arrow"></span></th>
           </tr>
         </thead>
-        <tbody id="tbody"><tr class="loading-row"><td colspan="7">Loading live funding data from Hyperliquid…</td></tr></tbody>
+        <tbody id="tbody"><tr class="loading-row"><td colspan="8">Loading live funding data from Hyperliquid…</td></tr></tbody>
       </table>
     </div>
 
@@ -375,10 +376,7 @@ async function loadAndDrawHistory(hlName) {
   const statsBox = document.getElementById('stats-' + cssEscape(hlName));
   if (!canvas) return;
   try {
-    const [points, sinceInception] = await Promise.all([
-      historyCache[hlName] || fetchHistory(hlName),
-      fetchSinceInception(hlName),
-    ]);
+    const points = historyCache[hlName] || await fetchHistory(hlName);
     drawSparkline(canvas, points);
     let html = '';
     if (points.length > 0) {
@@ -391,25 +389,18 @@ async function loadAndDrawHistory(hlName) {
         '<div class="stat-label" style="margin-top:8px">Range</div><div class="stat-value">' + fmtPct(min, 1) + ' to ' + fmtPct(max, 1) + '</div>' +
         '<div class="stat-label" style="margin-top:8px">History span</div><div class="stat-value">' + days + ' days, ' + points.length + ' hrs</div>';
     }
-    if (sinceInception && sinceInception.avg_apr_since_inception != null) {
-      const sinceDate = new Date(sinceInception.since).toLocaleDateString(undefined, {year:'numeric', month:'short', day:'numeric'});
+    // Reuse the bulk since-inception data already fetched for the whole table
+    // (loadData) instead of a second per-row network call.
+    const row = ROWS.find(r => r.hlName === hlName);
+    if (row && row.aprSinceInception != null) {
+      const sinceDate = new Date(row.trackedSince).toLocaleDateString(undefined, {year:'numeric', month:'short', day:'numeric'});
       html +=
-        '<div class="stat-label" style="margin-top:8px">Avg APR since inception</div><div class="stat-value">' + fmtPct(sinceInception.avg_apr_since_inception, 2) + '</div>' +
+        '<div class="stat-label" style="margin-top:8px">Avg APR since inception</div><div class="stat-value">' + fmtPct(row.aprSinceInception, 2) + '</div>' +
         '<div class="stat-label" style="margin-top:8px">Tracked since</div><div class="stat-value">' + sinceDate + '</div>';
     }
     statsBox.innerHTML = html || '<div class="detail-loading">No stats available.</div>';
   } catch (e) {
     if (statsBox) statsBox.innerHTML = '<div class="detail-loading">Could not load history: ' + e.message + '</div>';
-  }
-}
-
-async function fetchSinceInception(hlName) {
-  try {
-    const res = await fetch(`${API_BASE}/api/public/funding-since-inception?hl_name=${encodeURIComponent(hlName)}`);
-    if (!res.ok) return null;
-    return await res.json();
-  } catch (e) {
-    return null;
   }
 }
 
@@ -455,6 +446,9 @@ function render() {
   let rows = ROWS.filter(r => (!q || r.coin.toUpperCase().includes(q)) && (activeCategory === 'All' || r.category === activeCategory));
   rows = rows.slice().sort((a, b) => {
     const av = a[sortKey], bv = b[sortKey];
+    if (av == null && bv == null) return 0;
+    if (av == null) return 1;  // nulls always sort last, regardless of direction
+    if (bv == null) return -1;
     if (typeof av === 'string') return av.localeCompare(bv) * sortDir;
     return (av - bv) * sortDir;
   });
@@ -464,12 +458,17 @@ function render() {
 
   const tbody = document.getElementById('tbody');
   if (rows.length === 0) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No markets match "' + q + '"</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="8">No markets match "' + q + '"</td></tr>';
     return;
   }
 
   tbody.innerHTML = rows.map(r => {
     const aprClass = r.apr > 0 ? 'apr-pos' : (r.apr < 0 ? 'apr-neg' : 'apr-zero');
+    const sinceInception = r.aprSinceInception;
+    const sinceClass = sinceInception == null ? '' : (sinceInception > 0 ? 'apr-pos' : (sinceInception < 0 ? 'apr-neg' : 'apr-zero'));
+    const sinceCell = sinceInception == null
+      ? '<span class="dim">—</span>'
+      : '<span class="apr-pill ' + sinceClass + '">' + fmtPct(sinceInception, 2) + '</span>';
     const isOpen = r.hlName === expandedHlName;
     const chevron = '<span class="chevron' + (isOpen ? ' open' : '') + '">▸</span>';
     let html = '<tr class="row-clickable" data-hlname="' + r.hlName + '">' +
@@ -477,13 +476,14 @@ function render() {
       '<td style="text-align:left"><span class="cat-tag" style="color:' + (CATEGORY_COLORS[r.category] || 'var(--faint)') + '">' + r.category + '</span></td>' +
       '<td class="dim">' + fmtPct(r.fundingHr, 5) + '</td>' +
       '<td><span class="apr-pill ' + aprClass + '">' + fmtPct(r.apr, 2) + '</span></td>' +
+      '<td>' + sinceCell + '</td>' +
       '<td>' + fmtPrice(r.mark) + '</td>' +
       '<td class="dim">' + fmtUsd(r.vol24h) + '</td>' +
       '<td class="dim">' + fmtUsd(r.oiUsd) + '</td>' +
       '</tr>';
     if (isOpen) {
       const escaped = cssEscape(r.hlName);
-      html += '<tr class="detail-row"><td colspan="7">' +
+      html += '<tr class="detail-row"><td colspan="8">' +
         '<div class="detail-wrap">' +
           '<div class="detail-chart"><canvas id="spark-' + escaped + '" style="width:100%;height:120px;display:block;"></canvas>' +
           '<div style="color:var(--faint);font-size:11px;margin-top:4px;">Hourly funding, annualized to APR, last 30 days</div></div>' +
@@ -514,10 +514,27 @@ document.querySelectorAll('thead th').forEach(th => {
 });
 document.getElementById('search').addEventListener('input', render);
 
+async function fetchSinceInceptionAll() {
+  try {
+    const res = await fetch(`${API_BASE}/api/public/funding-since-inception-all`);
+    if (!res.ok) return {};
+    return await res.json();
+  } catch (e) {
+    return {};
+  }
+}
+
 async function loadData() {
   try {
-    const [crypto, xyz] = await Promise.all([fetchDex(null), fetchDex('xyz')]);
+    const [crypto, xyz, sinceInceptionMap] = await Promise.all([
+      fetchDex(null), fetchDex('xyz'), fetchSinceInceptionAll(),
+    ]);
     ROWS = crypto.concat(xyz);
+    ROWS.forEach(r => {
+      const entry = sinceInceptionMap[r.hlName];
+      r.aprSinceInception = entry ? entry.avg_apr_since_inception : null;
+      r.trackedSince = entry ? entry.since : null;
+    });
     document.getElementById('updated-at').textContent = 'updated ' + new Date().toLocaleTimeString();
     // Force a fresh history fetch (not the cached copy) for whichever symbol is
     // currently expanded, so its chart stays current on the same hourly cadence
@@ -526,7 +543,7 @@ async function loadData() {
     renderChips();
     render();
   } catch (e) {
-    document.getElementById('tbody').innerHTML = '<tr class="empty-row"><td colspan="7">Could not load live data from Hyperliquid (' + e.message + '). Try refreshing.</td></tr>';
+    document.getElementById('tbody').innerHTML = '<tr class="empty-row"><td colspan="8">Could not load live data from Hyperliquid (' + e.message + '). Try refreshing.</td></tr>';
     document.getElementById('updated-at').textContent = 'load failed';
   }
 }
