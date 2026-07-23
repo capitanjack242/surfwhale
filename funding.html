@@ -243,7 +243,7 @@ let activeCategory = 'All';
 let expandedHlName = null;
 const historyCache = {}; // hlName -> array of {time, apr}
 
-const HISTORY_WINDOW_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const HISTORY_WINDOW_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 async function fetchHistory(hlName) {
   const startTime = Date.now() - HISTORY_WINDOW_MS;
@@ -349,7 +349,7 @@ async function loadAndDrawHistory(hlName) {
       const min = Math.min(...aprs), max = Math.max(...aprs);
       const days = ((points[points.length-1].time - points[0].time) / 86400000).toFixed(1);
       statsBox.innerHTML =
-        '<div class="stat-label">7-day avg APR</div><div class="stat-value">' + fmtPct(avg, 2) + '</div>' +
+        '<div class="stat-label">30-day avg APR</div><div class="stat-value">' + fmtPct(avg, 2) + '</div>' +
         '<div class="stat-label" style="margin-top:8px">Range</div><div class="stat-value">' + fmtPct(min, 1) + ' to ' + fmtPct(max, 1) + '</div>' +
         '<div class="stat-label" style="margin-top:8px">History span</div><div class="stat-value">' + days + ' days, ' + points.length + ' hrs</div>';
     }
@@ -431,7 +431,7 @@ function render() {
       html += '<tr class="detail-row"><td colspan="7">' +
         '<div class="detail-wrap">' +
           '<div class="detail-chart"><canvas id="spark-' + escaped + '" style="width:100%;height:120px;display:block;"></canvas>' +
-          '<div style="color:var(--faint);font-size:11px;margin-top:4px;">Hourly funding, annualized to APR, last 7 days</div></div>' +
+          '<div style="color:var(--faint);font-size:11px;margin-top:4px;">Hourly funding, annualized to APR, last 30 days</div></div>' +
           '<div class="detail-stats" id="stats-' + escaped + '"><div class="detail-loading">Loading history…</div></div>' +
         '</div>' +
       '</td></tr>';
