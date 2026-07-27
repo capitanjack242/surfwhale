@@ -412,9 +412,12 @@ const CATEGORY_COLORS = {
 };
 
 function renderChips() {
-  const cats = ['All', ...Array.from(new Set(ROWS.map(r => r.category))).sort()];
-  const counts = { All: ROWS.length };
-  ROWS.forEach(r => counts[r.category] = (counts[r.category] || 0) + 1);
+  // Matches render()'s oiUsd > 0 filter so a chip's count is never higher
+  // than what clicking it will actually show.
+  const shown = ROWS.filter(r => r.oiUsd > 0);
+  const cats = ['All', ...Array.from(new Set(shown.map(r => r.category))).sort()];
+  const counts = { All: shown.length };
+  shown.forEach(r => counts[r.category] = (counts[r.category] || 0) + 1);
   document.getElementById('chips').innerHTML = cats.map(c =>
     '<div class="chip' + (c === activeCategory ? ' active' : '') + '" data-cat="' + c + '">' + c + ' (' + counts[c] + ')</div>'
   ).join('');
@@ -443,7 +446,7 @@ function fmtPrice(v) {
 
 function render() {
   const q = document.getElementById('search').value.trim().toUpperCase();
-  let rows = ROWS.filter(r => (!q || r.coin.toUpperCase().includes(q)) && (activeCategory === 'All' || r.category === activeCategory));
+  let rows = ROWS.filter(r => (!q || r.coin.toUpperCase().includes(q)) && (activeCategory === 'All' || r.category === activeCategory) && r.oiUsd > 0);
   rows = rows.slice().sort((a, b) => {
     const av = a[sortKey], bv = b[sortKey];
     if (av == null && bv == null) return 0;
