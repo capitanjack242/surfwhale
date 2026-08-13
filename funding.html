@@ -185,7 +185,7 @@
       </table>
     </div>
 
-    <footer>Funding is applied hourly on Hyperliquid &middot; APR = hourly rate &times; 24 &times; 365 &middot; Type tags for the builder-deployed "xyz" market are a best-effort classification, not official.<br><a href="mailto:admin@surfwhale.io" style="color:inherit;">admin@surfwhale.io</a></footer>
+    <footer>Funding is applied hourly on Hyperliquid &middot; APR = hourly rate &times; 24 &times; 365 &middot; Type tags for the builder-deployed "xyz" market are SurfWhale's own curated classification, not official Hyperliquid data.<br><a href="mailto:admin@surfwhale.io" style="color:inherit;">admin@surfwhale.io</a></footer>
   </div>
 
 <script>
@@ -194,21 +194,33 @@ const API_BASE = (location.hostname === 'localhost' || location.hostname === '12
   ? 'http://localhost:8001'
   : 'https://api.surfwhale.io';
 
-const FOREX = new Set(["JPY","EUR","GBP","KRW","DXY"]);
-const COMMODITY = new Set(["GOLD","SILVER","CL","COPPER","NATGAS","URANIUM","ALUMINIUM","PLATINUM","PALLADIUM","BRENTOIL","CORN","WHEAT","TTF"]);
-const INDEX = new Set(["XYZ100","SP500","JP225","KR200","NIFTY","IBOV","VIX","SMH","XLE","EWY","EWJ","EWZ","EWT","URNM","VOL"]);
-const STOCK = new Set(["TSLA","NVDA","HOOD","INTC","PLTR","COIN","META","AAPL","MSFT","ORCL","GOOGL","AMZN","AMD","MU","SNDK",
-  "MSTR","CRCL","NFLX","COST","LLY","TSM","RIVN","BABA","SMSN","USAR","CRWV","GME","SOFTBANK","HYUNDAI",
-  "KIOXIA","DKNG","LITE","BX","MRVL","RKLB","BIRD","EBAY","ARM","ASML","BB","DELL","IBM","AVGO","NOW",
-  "NBIS","WDC","NOK","BE","QCOM","AMAT","GEV","ZM","QNT","IBIDEN","STRC","SKHX","SKHY",
-  "HIMS","SPCX","MINIMAX","ZHIPU","CXMT"]);
+// Type tags come from the SurfWhale API, which is fed by the admin
+// Securities page -- a new listing gets classified once, there, and shows up
+// here without touching this file. The hardcoded ticker sets that used to
+// live at this spot were a duplicate of a second copy in the backend repo,
+// with nothing keeping the two in sync, and every new market fell to
+// "Other" on both until someone edited and redeployed both repos.
+//
+// CATEGORY_MAP is null until the first successful fetch. If the API is
+// unreachable, builder-dex rows honestly degrade to "Other" and the header
+// says the tags are missing -- a wrong-but-confident tag is worse than a
+// visibly absent one.
+let CATEGORY_MAP = null;
+
+async function fetchCategories() {
+  try {
+    const res = await fetch(`${API_BASE}/api/public/security-categories`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.categories || null;
+  } catch (e) {
+    return null;
+  }
+}
 
 function categorize(sym) {
-  if (FOREX.has(sym)) return 'Forex';
-  if (COMMODITY.has(sym)) return 'Commodity';
-  if (INDEX.has(sym)) return 'Index';
-  if (STOCK.has(sym)) return 'Stock';
-  return 'Other';
+  if (!CATEGORY_MAP) return 'Other';
+  return CATEGORY_MAP[sym] || 'Other';
 }
 
 async function fetchDex(dex) {
@@ -411,7 +423,7 @@ async function loadAndDrawHistory(hlName) {
 function cssEscape(s) { return s.replace(/[^a-zA-Z0-9]/g, '_'); }
 
 const CATEGORY_COLORS = {
-  Crypto: 'var(--teal)', Stock: 'var(--sunset-2)', Commodity: '#eab308',
+  Crypto: 'var(--teal)', Stock: 'var(--sunset-2)', ETF: '#2dd4bf', Commodity: '#eab308',
   Index: '#818cf8', Forex: '#38bdf8', Other: 'var(--faint)'
 };
 
@@ -533,6 +545,11 @@ async function fetchSinceInceptionAll() {
 
 async function loadData() {
   try {
+    // Categories resolve BEFORE the dex rows are mapped -- fetchDex bakes
+    // each row's category at construction time, so a late-arriving map
+    // would leave every tag as "Other" until the next hourly reload.
+    const categories = await fetchCategories();
+    if (categories) CATEGORY_MAP = categories;
     const [crypto, xyz, sinceInceptionMap] = await Promise.all([
       fetchDex(null), fetchDex('xyz'), fetchSinceInceptionAll(),
     ]);
@@ -543,7 +560,8 @@ async function loadData() {
       r.trackedSince = entry ? entry.since : null;
       r.trackedHours = entry ? entry.hours : null;
     });
-    document.getElementById('updated-at').textContent = 'updated ' + new Date().toLocaleTimeString();
+    document.getElementById('updated-at').textContent = 'updated ' + new Date().toLocaleTimeString()
+      + (CATEGORY_MAP ? '' : ' — type tags unavailable');
     // Force a fresh history fetch (not the cached copy) for whichever symbol is
     // currently expanded, so its chart stays current on the same hourly cadence
     // as the rest of the table.
