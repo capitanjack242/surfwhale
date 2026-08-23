@@ -48,21 +48,22 @@
      so no radius or frame is needed -- it sits on the page directly. */
   header .brand img {
     display: block;
-    width: 300px;
+    width: 320px;
     height: auto;
     border-radius: 0;
     object-fit: initial;
-    /* The whale is whole, but the crop still ends mid-candle along the right
-       and bottom. Fade both edges so that content dissolves into the page
-       instead of stopping on a line -- which works only because the artwork's
-       black point is already matched to the page background. */
+    /* Fades exist only to dissolve the wave trail and candles the crop cuts
+       through -- they must never touch the whale. Measured against this crop:
+       the whale's right edge is at 77% and its bottom at 88%, so the fades
+       start at 84% and 93%. The previous values (74% / 70%) were eating the
+       tail and the lower body, which is what read as "still cut off". */
     -webkit-mask-image:
-      linear-gradient(to right, #000 74%, transparent 100%),
-      linear-gradient(to bottom, #000 70%, transparent 100%);
+      linear-gradient(to right, #000 84%, transparent 100%),
+      linear-gradient(to bottom, #000 93%, transparent 100%);
     -webkit-mask-composite: source-in;
     mask-image:
-      linear-gradient(to right, #000 74%, transparent 100%),
-      linear-gradient(to bottom, #000 70%, transparent 100%);
+      linear-gradient(to right, #000 84%, transparent 100%),
+      linear-gradient(to bottom, #000 93%, transparent 100%);
     mask-composite: intersect;
   }
   .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
@@ -340,9 +341,9 @@
     <header>
         <a class="brand" href="/" aria-label="Surf Whale home">
           <picture>
-            <source type="image/webp" srcset="assets/brand-300.webp 1x, assets/brand-600.webp 2x" />
-            <img src="assets/brand-300.jpg" srcset="assets/brand-300.jpg 1x, assets/brand-600.jpg 2x"
-                 width="300" height="131" alt="Surf Whale - Hyperliquid Whale Intelligence" />
+            <source type="image/webp" srcset="assets/brand-340.webp 1x, assets/brand-680.webp 2x" />
+            <img src="assets/brand-340.jpg" srcset="assets/brand-340.jpg 1x, assets/brand-680.jpg 2x"
+                 width="340" height="130" alt="Surf Whale - Hyperliquid Whale Intelligence" />
           </picture>
         </a>
       <div class="header-right">
