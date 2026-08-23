@@ -36,9 +36,27 @@
     justify-content: space-between;
     padding: 24px 0;
   }
+  /* The footer reuses .brand with the round logo and a wordmark span, so the
+     lockup styles below are scoped to the header. Unscoped, the footer badge
+     rendered at 230px with a fade mask over it. */
   .brand { display: flex; align-items: center; gap: 12px; }
   .brand img { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; }
   .brand span { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+
+  header .brand { gap: 0; text-decoration: none; }
+  /* The artwork's black point is lifted to the page background at build time,
+     so no radius or frame is needed -- it sits on the page directly. */
+  header .brand img {
+    display: block;
+    width: 230px;
+    height: auto;
+    border-radius: 0;
+    object-fit: initial;
+    /* The crop slices the whale mid-body. Fade the right edge so it dissolves
+       into the page rather than ending on a hard vertical cut. */
+    -webkit-mask-image: linear-gradient(to right, #000 72%, transparent 100%);
+    mask-image: linear-gradient(to right, #000 72%, transparent 100%);
+  }
   .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
   header nav a {
     text-decoration: none;
@@ -312,10 +330,13 @@
 
   <div class="wrap">
     <header>
-      <div class="brand">
-        <img src="assets/logo.jpg" alt="Surf Whale" />
-        <span>Surf Whale</span>
-      </div>
+        <a class="brand" href="/" aria-label="Surf Whale home">
+          <picture>
+            <source type="image/webp" srcset="assets/brand-280.webp 1x, assets/brand-560.webp 2x" />
+            <img src="assets/brand-280.jpg" srcset="assets/brand-280.jpg 1x, assets/brand-560.jpg 2x"
+                 width="280" height="72" alt="Surf Whale - Hyperliquid Whale Intelligence" />
+          </picture>
+        </a>
       <div class="header-right">
         <nav>
           <a href="#lookup">Look up a wallet</a>
@@ -332,16 +353,6 @@
   <section class="hero">
     <div class="hero-glow"></div>
     <div class="wrap">
-      <div class="banner-frame">
-        <picture>
-          <source type="image/webp" srcset="assets/hero-wide-1100.webp 1100w, assets/hero-wide-1600.webp 1600w" sizes="(max-width: 1140px) 100vw, 1100px" />
-          <img class="banner" src="assets/hero-wide-1100.jpg"
-               srcset="assets/hero-wide-1100.jpg 1100w, assets/hero-wide-1600.jpg 1600w"
-               sizes="(max-width: 1140px) 100vw, 1100px"
-               width="2352" height="784" fetchpriority="high" decoding="async"
-               alt="Surf Whale - Hyperliquid Whale Intelligence. Follow the Money. Ride the Wave." />
-        </picture>
-      </div>
       <div class="badge"><span class="dot"></span> Built on Hyperliquid</div>
       <h1>Swim with the sharks<br/>or surf with the whales?</h1>
       <p class="sub">Surf Whale tracks Hyperliquid's biggest traders in real time — who's actually winning, how they trade, and what it would look like to follow them.</p>
