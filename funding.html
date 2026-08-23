@@ -42,7 +42,34 @@
   .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
   .brand img { width: 40px; height: 40px; border-radius: 10px; object-fit: cover; }
   .brand span { font-size: 19px; font-weight: 700; letter-spacing: -0.02em; color: var(--text); }
-  header nav a { text-decoration: none; color: var(--muted); font-size: 14px; margin-left: 24px; }
+
+  /* Header lockup, scoped so a footer reusing .brand keeps its small round
+     badge. 600px is set by measurement, not taste: the tagline glyphs are
+     34px in the source artwork, so at this crop width they land near 12px --
+     the floor for readable text. At 320px they were 6px. */
+  header .brand { gap: 0; text-decoration: none; align-self: flex-start; }
+  header .brand img {
+    display: block;
+    width: 600px;
+    max-width: 100%;
+    height: auto;
+    border-radius: 0;
+    object-fit: initial;
+    /* Fades dissolve the wave trail and candles the crop cuts through, and
+       must never touch the whale: its right edge sits at 77% of this crop and
+       its bottom at 88%, so they start at 84% and 93%. */
+    -webkit-mask-image:
+      linear-gradient(to right, #000 84%, transparent 100%),
+      linear-gradient(to bottom, #000 93%, transparent 100%);
+    -webkit-mask-composite: source-in;
+    mask-image:
+      linear-gradient(to right, #000 84%, transparent 100%),
+      linear-gradient(to bottom, #000 93%, transparent 100%);
+    mask-composite: intersect;
+  }
+  header nav { align-self: flex-start; }
+
+  header nav a { text-decoration: none; color: var(--muted); font-size: 18px; margin-left: 24px; }
   header nav a:hover { color: var(--text); }
 
   .page-head { padding: 8px 0 20px; }
@@ -132,6 +159,7 @@
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 6px; }
 
   @media (max-width: 600px) {
+    header .brand img { width: 100%; }
     header nav { display: none; }
     h1 { font-size: 26px; }
   }
@@ -141,9 +169,13 @@
   <div class="wrap">
     <header>
       <a class="brand" href="index.html">
-        <img src="assets/logo.jpg" alt="Surf Whale" />
-        <span>Surf Whale</span>
-      </a>
+          <picture>
+            <source type="image/webp" srcset="assets/brand-600.webp 1x, assets/brand-1200.webp 2x" />
+            <img src="assets/brand-600.jpg" srcset="assets/brand-600.jpg 1x, assets/brand-1200.jpg 2x"
+                 width="600" height="229"
+                 alt="Surf Whale - Hyperliquid Whale Intelligence. Follow the Money. Ride the Wave." />
+          </picture>
+        </a>
       <nav>
         <a href="index.html#lookup">Look up a wallet</a>
         <a href="funding.html">Funding Rates</a>
