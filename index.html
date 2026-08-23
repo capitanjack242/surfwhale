@@ -48,7 +48,11 @@
      so no radius or frame is needed -- it sits on the page directly. */
   header .brand img {
     display: block;
-    width: 320px;
+    /* 600px is not a taste call: the tagline glyphs are 34px tall in the
+       source artwork, so at this crop width they render ~12px, which is the
+       floor for readability. At the previous 320px they were 6px. */
+    width: 600px;
+    max-width: 100%;
     height: auto;
     border-radius: 0;
     object-fit: initial;
@@ -335,6 +339,10 @@
     .hero h1 { font-size: 36px; }
     .hero p.sub { font-size: 16px; }
     header nav { display: none; }
+    /* Fixed 600px overflows a phone. The taglines are unreadable at this size
+       whatever we do -- see the note on .brand img -- so the constraint here
+       is simply fitting. */
+    header .brand img { width: 100%; }
   }
 </style>
 </head>
@@ -344,9 +352,9 @@
     <header>
         <a class="brand" href="/" aria-label="Surf Whale home">
           <picture>
-            <source type="image/webp" srcset="assets/brand-340.webp 1x, assets/brand-680.webp 2x" />
-            <img src="assets/brand-340.jpg" srcset="assets/brand-340.jpg 1x, assets/brand-680.jpg 2x"
-                 width="340" height="130" alt="Surf Whale - Hyperliquid Whale Intelligence" />
+            <source type="image/webp" srcset="assets/brand-600.webp 1x, assets/brand-1200.webp 2x" />
+            <img src="assets/brand-600.jpg" srcset="assets/brand-600.jpg 1x, assets/brand-1200.jpg 2x"
+                 width="600" height="229" alt="Surf Whale - Hyperliquid Whale Intelligence" />
           </picture>
         </a>
       <div class="header-right">
