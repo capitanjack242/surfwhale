@@ -48,14 +48,22 @@
      so no radius or frame is needed -- it sits on the page directly. */
   header .brand img {
     display: block;
-    width: 230px;
+    width: 300px;
     height: auto;
     border-radius: 0;
     object-fit: initial;
-    /* The crop slices the whale mid-body. Fade the right edge so it dissolves
-       into the page rather than ending on a hard vertical cut. */
-    -webkit-mask-image: linear-gradient(to right, #000 72%, transparent 100%);
-    mask-image: linear-gradient(to right, #000 72%, transparent 100%);
+    /* The whale is whole, but the crop still ends mid-candle along the right
+       and bottom. Fade both edges so that content dissolves into the page
+       instead of stopping on a line -- which works only because the artwork's
+       black point is already matched to the page background. */
+    -webkit-mask-image:
+      linear-gradient(to right, #000 74%, transparent 100%),
+      linear-gradient(to bottom, #000 70%, transparent 100%);
+    -webkit-mask-composite: source-in;
+    mask-image:
+      linear-gradient(to right, #000 74%, transparent 100%),
+      linear-gradient(to bottom, #000 70%, transparent 100%);
+    mask-composite: intersect;
   }
   .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
   header nav a {
@@ -332,9 +340,9 @@
     <header>
         <a class="brand" href="/" aria-label="Surf Whale home">
           <picture>
-            <source type="image/webp" srcset="assets/brand-280.webp 1x, assets/brand-560.webp 2x" />
-            <img src="assets/brand-280.jpg" srcset="assets/brand-280.jpg 1x, assets/brand-560.jpg 2x"
-                 width="280" height="72" alt="Surf Whale - Hyperliquid Whale Intelligence" />
+            <source type="image/webp" srcset="assets/brand-300.webp 1x, assets/brand-600.webp 2x" />
+            <img src="assets/brand-300.jpg" srcset="assets/brand-300.jpg 1x, assets/brand-600.jpg 2x"
+                 width="300" height="131" alt="Surf Whale - Hyperliquid Whale Intelligence" />
           </picture>
         </a>
       <div class="header-right">
