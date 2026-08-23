@@ -87,12 +87,19 @@
        (12,14,18), which was the only visible seam left once the artwork's
        black point was matched to the page. Now it glows behind the headline,
        which is what it was really for. */
-    top: 34%;
+    top: 48%;
     left: 50%;
     transform: translateX(-50%);
     width: 700px;
     height: 560px;
     background: radial-gradient(circle, rgba(255,154,118,0.18), rgba(139,111,179,0.12) 45%, transparent 70%);
+    /* A radial gradient is weakest at its edges but NOT zero, so wherever the
+       banner stops covering it the remainder is revealed all at once -- a
+       horizontal line across the page at the banner's bottom edge. The mask
+       forces it to start from nothing and fade in, so there is no intensity
+       to reveal. Measured before: a step from (12,14,18) to (27,26,36). */
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 70%);
+    mask-image: linear-gradient(to bottom, transparent 0%, #000 70%);
     pointer-events: none;
     z-index: 0;
   }
