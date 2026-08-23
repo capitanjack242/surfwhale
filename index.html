@@ -81,11 +81,17 @@
   }
   .hero-glow {
     position: absolute;
-    top: -120px;
+    /* Pushed below the banner. It sat at -120px to bloom behind the round
+       mascot that used to be here; against the banner it instead lit the
+       page to (27,26,36) directly above an image whose own black is
+       (12,14,18), which was the only visible seam left once the artwork's
+       black point was matched to the page. Now it glows behind the headline,
+       which is what it was really for. */
+    top: 34%;
     left: 50%;
     transform: translateX(-50%);
     width: 700px;
-    height: 700px;
+    height: 560px;
     background: radial-gradient(circle, rgba(255,154,118,0.18), rgba(139,111,179,0.12) 45%, transparent 70%);
     pointer-events: none;
     z-index: 0;
@@ -96,9 +102,10 @@
     width: 100%;
     height: auto;
     border-radius: 14px;
-    /* Hairline frame rather than the warm glow used elsewhere -- an orange
-       bloom under a cold blue image reads as a mismatch. */
-    border: 1px solid rgba(255,255,255,0.08);
+    /* No border. The artwork's black point is lifted to the page background
+       (#0b0e11) when the asset is generated, so the image blends into the
+       page -- a frame would put back the rectangle that lift exists to
+       remove. */
   }
   /* Reserve the box before the image loads, or the headline and everything
      under it jump when it arrives -- the layout shift Core Web Vitals
