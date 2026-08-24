@@ -254,7 +254,7 @@
       ? 'http://localhost:8001'
       : 'https://api.surfwhale.io';
 
-    const fmtUsd = (n) => n == null ? '—' : '$' + Number(n).toLocaleString(undefined, { maximumFractionDigits: 0 });
+    const fmtUsd = (n) => n == null ? '—' : (Number(n) < 0 ? '-$' : '$') + Math.abs(Number(n)).toLocaleString(undefined, { maximumFractionDigits: 0 });  // sign before the symbol: '$-1,636' reads as a typo
     const fmtPct = (n) => n == null ? '—' : (n * 100).toFixed(1) + '%';
     const cls = (n) => n == null ? '' : (n >= 0 ? 'pos' : 'neg');
 
@@ -352,6 +352,7 @@
             <h3>Wallet Overview</h3>
             <div class="stat-grid">
               <div class="stat"><span class="stat-label">Net worth</span><span class="stat-value">${fmtUsd(d.net_worth)}</span></div>
+                <div class="stat"><span class="stat-label">Net profit</span><span class="stat-value ${cls(d.net_profit)}">${fmtUsd(d.net_profit)}</span></div>
               <div class="stat"><span class="stat-label">Win rate</span><span class="stat-value">${fmtPct(d.win_rate)}</span></div>
               <div class="stat"><span class="stat-label">Trades</span><span class="stat-value">${d.trade_count ?? '—'}</span></div>
               <div class="stat"><span class="stat-label">Actual return</span><span class="stat-value ${cls(d.actual_return)}">${fmtPct(d.actual_return)}</span></div>
