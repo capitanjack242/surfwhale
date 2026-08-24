@@ -493,11 +493,20 @@
   </div>
 
   <script>
-    const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-      ? 'http://localhost:8001'
-      : 'https://api.surfwhale.io';
+    const LOCAL_HOST = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    const API_BASE = LOCAL_HOST ? 'http://localhost:8001' : 'https://api.surfwhale.io';
 
-    fetch(`${API_BASE}/api/public/stats`)
+    // Previewing the site locally without a local API used to look like a
+    // bug: the badge rendered, its fetch failed, and the catch below hid it
+    // -- "shows with no count, then disappears". Fall back to the live API so
+    // a local preview behaves like production. Only ever from localhost, and
+    // both localhost and 127.0.0.1 are on the API's CORS allow-list because
+    // a browser treats them as different origins.
+    const apiFetch = (path) =>
+      fetch(`${API_BASE}${path}`).catch((e) =>
+        LOCAL_HOST ? fetch(`https://api.surfwhale.io${path}`) : Promise.reject(e));
+
+    apiFetch('/api/public/stats')
       .then(res => res.ok ? res.json() : Promise.reject(res.status))
       .then(d => {
         document.getElementById('verified-count').textContent = d.verified_whale_count.toLocaleString();
@@ -519,7 +528,7 @@
       const address = input.value.trim();
       resultEl.innerHTML = '<p class="lookup-status">Looking up…</p>';
       try {
-        const res = await fetch(`${API_BASE}/api/public/wallet/${address}`);
+        const res = await apiFetch(`/api/public/wallet/${address}`);
         if (res.status === 429) {
           resultEl.innerHTML = '<p class="lookup-status">Too many lookups from this browser — try again in a bit.</p>';
           return;
