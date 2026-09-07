@@ -1,0 +1,8 @@
+# Cloudflare Pages headers. The zone's edge cache follows origin
+# Cache-Control, and Pages' default (4h, must-revalidate) had the assets
+# missing or revalidating on almost every view: 7.3% cache-hit ratio on a
+# fully static site. The images change only when regenerated from the
+# banner source, so a week at the edge with a day's grace is the right shape.
+# HTML is deliberately left on the default so a deploy shows up immediately.
+/assets/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
