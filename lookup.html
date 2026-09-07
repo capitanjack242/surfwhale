@@ -266,6 +266,15 @@
     const fmtPct2 = (n) => n == null ? '—' : (n * 100).toFixed(2) + '%';
     const fmtUsdSigned = (n) => n == null ? '—' : (n < 0 ? `($${fmt2(Math.abs(n))})` : `$${fmt2(n)}`);
     const fmtRatio = (n) => n == null ? '—' : Number(n).toFixed(2);
+    // Tracked whales are served from the last monitoring visit (a few hours
+    // old at most) instead of a ~20s live rebuild; say so rather than let a
+    // reader assume the numbers are this second's.
+    const fmtAsOf = (d) => {
+      if (!d.as_of || d.source !== 'stored') return '';
+      const mins = Math.max(0, Math.round((Date.now() - new Date(d.as_of).getTime()) / 60000));
+      const age = mins < 60 ? `${mins} min` : `${Math.round(mins / 60)} h`;
+      return `Tracked whale — data from our last check ${age} ago.`;
+    };
 
     const PERFORMANCE_ROWS = [
       { label: 'Total net profit', key: 'net_profit', fmt: fmtUsdSigned, colored: true },
@@ -359,7 +368,7 @@
               <div class="stat"><span class="stat-label">Annualized return</span><span class="stat-value ${cls(d.annualized_return)}">${fmtPct(d.annualized_return)}</span></div>
               <div class="stat"><span class="stat-label">Funding-only return</span><span class="stat-value ${cls(d.funding_annualized_return)}">${fmtPct(d.funding_annualized_return)}</span></div>
             </div>
-            ${d.days != null ? `<p class="lookup-status">Based on ${Math.round(d.days)} days of history.</p>` : ''}
+            ${d.days != null || d.as_of ? `<p class="lookup-status">${d.days != null ? `Based on ${Math.round(d.days)} days of history.` : ''} ${fmtAsOf(d)}</p>` : ''}
           </div>
           <div class="result-section">
             ${renderPerformanceTable(p)}
