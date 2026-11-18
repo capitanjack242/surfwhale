@@ -5,7 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Surf Whale — Hyperliquid Funding Rates &amp; APR</title>
 <meta name="description" content="Every perpetual market on Hyperliquid -- crypto, stocks, commodities, forex, and indices -- with live funding rate and annualized APR, sortable and searchable." />
-<link rel="icon" href="assets/logo.jpg" />
+<link rel="icon" type="image/png" href="assets/logo-96.png" />
+<link rel="canonical" href="https://surfwhale.io/funding" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Surf Whale" />
+<meta property="og:url" content="https://surfwhale.io/funding" />
+<meta property="og:title" content="Surf Whale — Hyperliquid Funding Rates &amp; APR" />
+<meta property="og:description" content="Every perpetual market on Hyperliquid, from crypto to stocks, commodities, forex and indices, with live funding rate and annualized APR." />
+<meta property="og:image" content="https://surfwhale.io/assets/og-1200x630.jpg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="Surf Whale: Hyperliquid whale intelligence. Follow the money, ride the wave." />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Surf Whale — Hyperliquid Funding Rates &amp; APR" />
+<meta name="twitter:description" content="Every perpetual market on Hyperliquid, from crypto to stocks, commodities, forex and indices, with live funding rate and annualized APR." />
+<meta name="twitter:image" content="https://surfwhale.io/assets/og-1200x630.jpg" />
 <style>
   :root {
     --bg: #0b0e11;
@@ -14,7 +28,9 @@
     --border: #262b31;
     --text: #e6e9ec;
     --muted: #8a939d;
-    --faint: #5c6570;
+    /* Was #5c6570: 3.0:1 on --panel, under the 4.5:1 floor for the 11-13px
+       text it is used on. This is 4.8:1 on --panel-2, its darkest-contrast ground. */
+    --faint: #838b96;
     --teal: #4ecdc4;
     --sunset-1: #ff9a76;
     --sunset-2: #f4708a;
@@ -34,6 +50,8 @@
     line-height: 1.5;
   }
   a { color: inherit; }
+  /* One visible keyboard focus ring for every link and control. */
+  :focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
   .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px 64px; }
 
   header {
@@ -67,10 +85,28 @@
       linear-gradient(to bottom, #000 93%, transparent 100%);
     mask-composite: intersect;
   }
-  header nav { align-self: flex-start; }
 
-  header nav a { text-decoration: none; color: var(--muted); font-size: 18px; margin-left: 24px; }
+  header nav a { text-decoration: none; color: var(--muted); font-size: 18px; }
   header nav a:hover { color: var(--text); }
+  /* Every page lists the same four links. They wrap as whole links, never
+     mid-phrase, and the lockup keeps its 600px until the header stacks. */
+  header { gap: 12px 24px; }
+  header .brand { flex: 0 1 600px; min-width: 0; }
+  header nav { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px 28px; }
+  header nav a { white-space: nowrap; }
+  header nav a[aria-current="page"] { color: var(--text); }
+  @media (max-width: 900px) {
+    header { flex-direction: column; align-items: flex-start; }
+    header .brand { flex: 0 0 auto; }
+    header nav { justify-content: flex-start; }
+  }
+  /* Phones used to get no navigation at all (display: none). */
+  @media (max-width: 600px) {
+    header nav { gap: 4px 20px; }
+    header nav a { font-size: 15px; }
+  }
+  header nav { flex: 1 1 0; min-width: 0; align-self: flex-start; }
+  @media (max-width: 900px) { header nav { flex: 0 0 auto; } }
 
   .page-head { padding: 8px 0 20px; }
   .eyebrow {
@@ -102,7 +138,7 @@
   .chip {
     border: 1px solid var(--border); background: var(--panel); color: var(--muted);
     padding: 5px 12px; border-radius: 20px; font-size: 12.5px; font-weight: 600;
-    cursor: pointer; transition: all 0.12s; user-select: none;
+    cursor: pointer; transition: all 0.12s; user-select: none; font-family: inherit;
   }
   .chip:hover { border-color: var(--faint); color: var(--text); }
   .chip.active { background: var(--teal); border-color: var(--teal); color: #06201d; }
@@ -160,7 +196,6 @@
 
   @media (max-width: 600px) {
     header .brand img { width: 100%; }
-    header nav { display: none; }
     h1 { font-size: 26px; }
   }
 </style>
@@ -177,8 +212,10 @@
           </picture>
         </a>
       <nav>
-        <a href="index.html#lookup">Look up a wallet</a>
-        <a href="funding.html">Funding Rates</a>
+        <a href="lookup.html">Look up a wallet</a>
+        <a href="funding.html" aria-current="page">Funding Rates</a>
+        <a href="index.html#features">Features</a>
+        <a href="index.html#how">How it works</a>
       </nav>
     </header>
 
@@ -192,7 +229,7 @@
     <div class="toolbar">
       <div class="search">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input id="search" type="text" placeholder="Filter by symbol…" autocomplete="off">
+        <input id="search" type="text" aria-label="Filter markets by symbol" placeholder="Filter by symbol…" autocomplete="off">
       </div>
       <div class="meta"><b id="visible-count">—</b> of <b id="total-count">—</b> markets &middot; <span id="updated-at">loading…</span></div>
     </div>
@@ -467,13 +504,16 @@ function renderChips() {
   const counts = { All: shown.length };
   shown.forEach(r => counts[r.category] = (counts[r.category] || 0) + 1);
   document.getElementById('chips').innerHTML = cats.map(c =>
-    '<div class="chip' + (c === activeCategory ? ' active' : '') + '" data-cat="' + c + '">' + c + ' (' + counts[c] + ')</div>'
+    '<button type="button" class="chip' + (c === activeCategory ? ' active' : '') + '" aria-pressed="' + (c === activeCategory) + '" data-cat="' + c + '">' + c + ' (' + counts[c] + ')</button>'
   ).join('');
   document.querySelectorAll('.chip').forEach(chip => {
     chip.addEventListener('click', () => {
       activeCategory = chip.dataset.cat;
       renderChips();
       render();
+      // renderChips rebuilt the buttons, which drops keyboard focus.
+      const active = document.querySelector('.chip.active');
+      if (active) active.focus();
     });
   });
 }
@@ -547,6 +587,16 @@ function render() {
 
   tbody.querySelectorAll('tr.row-clickable').forEach(tr => {
     tr.addEventListener('click', () => toggleExpand(tr.dataset.hlname, tr));
+    tr.tabIndex = 0;
+    tr.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      const name = tr.dataset.hlname;
+      toggleExpand(name, tr);
+      // The table was rebuilt; put focus back on the same market's row.
+      const again = Array.from(document.querySelectorAll('tr.row-clickable')).find(r => r.dataset.hlname === name);
+      if (again) again.focus();
+    });
   });
 
   if (expandedHlName && rows.some(r => r.hlName === expandedHlName)) {
@@ -555,6 +605,10 @@ function render() {
 }
 
 document.querySelectorAll('thead th').forEach(th => {
+  th.tabIndex = 0;
+  th.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); th.click(); }
+  });
   th.addEventListener('click', () => {
     const key = th.dataset.key;
     if (sortKey === key) { sortDir *= -1; } else { sortKey = key; sortDir = -1; }

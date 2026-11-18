@@ -5,7 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Surf Whale — Swim with the sharks or surf with the whales?</title>
 <meta name="description" content="Swim with the sharks or surf with the whales? Surf Whale tracks Hyperliquid's top traders in real time — portfolio analytics, trade performance, whale discovery, and copy-trade simulation, all in one place." />
-<link rel="icon" href="assets/logo.jpg" />
+<link rel="icon" type="image/png" href="assets/logo-96.png" />
+<link rel="canonical" href="https://surfwhale.io/" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Surf Whale" />
+<meta property="og:url" content="https://surfwhale.io/" />
+<meta property="og:title" content="Surf Whale — Swim with the sharks or surf with the whales?" />
+<meta property="og:description" content="Surf Whale tracks Hyperliquid's top traders in real time: portfolio analytics, trade performance, whale discovery and copy-trade simulation." />
+<meta property="og:image" content="https://surfwhale.io/assets/og-1200x630.jpg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="Surf Whale: Hyperliquid whale intelligence. Follow the money, ride the wave." />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Surf Whale — Swim with the sharks or surf with the whales?" />
+<meta name="twitter:description" content="Surf Whale tracks Hyperliquid's top traders in real time: portfolio analytics, trade performance, whale discovery and copy-trade simulation." />
+<meta name="twitter:image" content="https://surfwhale.io/assets/og-1200x630.jpg" />
 <style>
   :root {
     --bg: #0b0e11;
@@ -28,6 +42,8 @@
     line-height: 1.5;
   }
   a { color: inherit; }
+  /* One visible keyboard focus ring for every link and control. */
+  :focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
   .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
 
   header {
@@ -78,9 +94,26 @@
     text-decoration: none;
     color: var(--muted);
     font-size: 18px;
-    margin-left: 30px;
   }
   header nav a:hover { color: var(--text); }
+  /* Every page lists the same four links. They wrap as whole links, never
+     mid-phrase, and the lockup keeps its 600px until the header stacks. */
+  header { gap: 12px 24px; }
+  header .brand { flex: 0 1 600px; min-width: 0; }
+  header nav { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px 28px; }
+  header nav a { white-space: nowrap; }
+  header nav a[aria-current="page"] { color: var(--text); }
+  @media (max-width: 900px) {
+    header { flex-direction: column; align-items: flex-start; }
+    header .brand { flex: 0 0 auto; }
+    header nav { justify-content: flex-start; }
+  }
+  /* Phones used to get no navigation at all (display: none). */
+  @media (max-width: 600px) {
+    header nav { gap: 4px 20px; }
+    header nav a { font-size: 15px; }
+  }
+  .header-right { flex: 1 1 0; min-width: 0; }
   .verified-badge {
     display: inline-flex;
     align-items: center;
@@ -99,8 +132,12 @@
   }
   .verified-badge b { color: var(--text); font-size: 20px; font-weight: 700; }
 
+  @media (max-width: 900px) {
+    .header-right { flex: 0 0 auto; align-items: flex-start; align-self: auto; }
+  }
   @media (max-width: 600px) {
-    .header-right { display: none; }
+    .verified-badge { font-size: 14px; padding: 8px 14px; }
+    .verified-badge b { font-size: 16px; }
   }
 
   .hero {
@@ -302,6 +339,8 @@
     background: linear-gradient(135deg, var(--sunset-1), var(--sunset-3));
     display: flex; align-items: center; justify-content: center;
     font-weight: 700; font-size: 15px;
+    /* Dark on the gradient: the light text it had was about 2:1 at the pale end. */
+    color: #0b0e11;
     margin: 0 auto 16px;
   }
   .step .num::before { content: counter(step); }
@@ -338,7 +377,8 @@
   .hero .banner-frame { margin-bottom: 22px; }
     .hero h1 { font-size: 36px; }
     .hero p.sub { font-size: 16px; }
-    header nav { display: none; }
+    .lookup-panel form { flex-direction: column; }
+    .lookup-panel { padding: 24px; }
     /* Fixed 600px overflows a phone. The taglines are unreadable at this size
        whatever we do -- see the note on .brand img -- so the constraint here
        is simply fitting. */
@@ -360,6 +400,7 @@
       <div class="header-right">
         <nav>
           <a href="#lookup">Look up a wallet</a>
+          <a href="funding.html">Funding Rates</a>
           <a href="#features">Features</a>
           <a href="#how">How it works</a>
         </nav>
@@ -386,10 +427,10 @@
       <h2 class="section-title">Look up any Hyperliquid wallet</h2>
       <div class="lookup-panel">
         <form id="lookup-form">
-          <input type="text" id="lookup-address" placeholder="0x..." autocomplete="off" spellcheck="false" />
+          <input type="text" id="lookup-address" aria-label="Hyperliquid wallet address" placeholder="0x..." autocomplete="off" spellcheck="false" />
           <button type="submit">Look up</button>
         </form>
-        <div id="lookup-result"></div>
+        <div id="lookup-result" aria-live="polite"></div>
       </div>
     </div>
   </section>
@@ -485,7 +526,7 @@
   <div class="wrap">
     <footer>
       <div class="brand">
-        <img src="assets/logo.jpg" alt="Surf Whale" />
+        <img src="assets/logo-96.png" width="24" height="24" alt="" />
         <span>Surf Whale</span>
       </div>
       <div><a href="mailto:admin@surfwhale.io" style="color:inherit;text-decoration:none;">admin@surfwhale.io</a> &middot; &copy; 2026 Surf Whale</div>

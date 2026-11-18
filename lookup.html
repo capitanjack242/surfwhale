@@ -5,7 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Surf Whale — Look up any Hyperliquid wallet</title>
 <meta name="description" content="Look up any Hyperliquid wallet's net worth, returns, and full trade performance stats — win rate, profit factor, drawdown, Sharpe/Sortino, and more." />
-<link rel="icon" href="assets/logo.jpg" />
+<link rel="icon" type="image/png" href="assets/logo-96.png" />
+<link rel="canonical" href="https://surfwhale.io/lookup" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Surf Whale" />
+<meta property="og:url" content="https://surfwhale.io/lookup" />
+<meta property="og:title" content="Surf Whale — Look up any Hyperliquid wallet" />
+<meta property="og:description" content="Look up any Hyperliquid wallet's net worth, returns and full trade performance: win rate, profit factor, drawdown, Sharpe/Sortino and more." />
+<meta property="og:image" content="https://surfwhale.io/assets/og-1200x630.jpg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="Surf Whale: Hyperliquid whale intelligence. Follow the money, ride the wave." />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Surf Whale — Look up any Hyperliquid wallet" />
+<meta name="twitter:description" content="Look up any Hyperliquid wallet's net worth, returns and full trade performance: win rate, profit factor, drawdown, Sharpe/Sortino and more." />
+<meta name="twitter:image" content="https://surfwhale.io/assets/og-1200x630.jpg" />
 <style>
   :root {
     --bg: #0b0e11;
@@ -28,6 +42,8 @@
     line-height: 1.5;
   }
   a { color: inherit; }
+  /* One visible keyboard focus ring for every link and control. */
+  :focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
   .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
 
   header {
@@ -64,15 +80,32 @@
       linear-gradient(to bottom, #000 93%, transparent 100%);
     mask-composite: intersect;
   }
-  header nav { align-self: flex-start; }
 
   header nav a {
     text-decoration: none;
     color: var(--muted);
     font-size: 18px;
-    margin-left: 28px;
   }
   header nav a:hover { color: var(--text); }
+  /* Every page lists the same four links. They wrap as whole links, never
+     mid-phrase, and the lockup keeps its 600px until the header stacks. */
+  header { gap: 12px 24px; }
+  header .brand { flex: 0 1 600px; min-width: 0; }
+  header nav { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px 28px; }
+  header nav a { white-space: nowrap; }
+  header nav a[aria-current="page"] { color: var(--text); }
+  @media (max-width: 900px) {
+    header { flex-direction: column; align-items: flex-start; }
+    header .brand { flex: 0 0 auto; }
+    header nav { justify-content: flex-start; }
+  }
+  /* Phones used to get no navigation at all (display: none). */
+  @media (max-width: 600px) {
+    header nav { gap: 4px 20px; }
+    header nav a { font-size: 15px; }
+  }
+  header nav { flex: 1 1 0; min-width: 0; align-self: flex-start; }
+  @media (max-width: 900px) { header nav { flex: 0 0 auto; } }
 
   .page-head {
     text-align: center;
@@ -193,7 +226,6 @@
 
   @media (max-width: 600px) {
     header .brand img { width: 100%; }
-    header nav { display: none; }
     .page-head h1 { font-size: 28px; }
     .lookup-panel form { flex-direction: column; }
   }
@@ -212,7 +244,8 @@
           </picture>
         </a>
       <nav>
-        <a href="lookup.html">Look up a wallet</a>
+        <a href="lookup.html" aria-current="page">Look up a wallet</a>
+        <a href="funding.html">Funding Rates</a>
         <a href="index.html#features">Features</a>
         <a href="index.html#how">How it works</a>
       </nav>
@@ -231,10 +264,10 @@
     <div class="wrap">
       <div class="lookup-panel">
         <form id="lookup-form">
-          <input type="text" id="lookup-address" placeholder="0x..." autocomplete="off" spellcheck="false" />
+          <input type="text" id="lookup-address" aria-label="Hyperliquid wallet address" placeholder="0x..." autocomplete="off" spellcheck="false" />
           <button type="submit">Look up</button>
         </form>
-        <div id="lookup-result"></div>
+        <div id="lookup-result" aria-live="polite"></div>
       </div>
     </div>
   </section>
@@ -242,7 +275,7 @@
   <div class="wrap">
     <footer>
       <div class="brand">
-        <img src="assets/logo.jpg" alt="Surf Whale" />
+        <img src="assets/logo-96.png" width="24" height="24" alt="" />
         <span>Surf Whale</span>
       </div>
       <div><a href="mailto:admin@surfwhale.io" style="color:inherit;text-decoration:none;">admin@surfwhale.io</a> &middot; &copy; 2026 Surf Whale</div>
