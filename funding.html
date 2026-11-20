@@ -115,12 +115,18 @@
     color: var(--teal); margin-bottom: 12px;
   }
   .eyebrow .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 3px rgba(78,205,196,0.2); }
-  h1 {
-    font-size: 34px; font-weight: 800; margin: 0 0 10px; letter-spacing: -0.02em;
-    background: linear-gradient(90deg, var(--sunset-1), var(--sunset-2) 45%, var(--sunset-3));
-    -webkit-background-clip: text; background-clip: text; color: transparent;
-  }
+  h1 { font-size: 36px; font-weight: 700; margin: 0 0 10px; letter-spacing: -0.02em; line-height: 1.2; }
   .sub { color: var(--muted); font-size: 15px; margin: 0; max-width: 68ch; }
+
+  /* Tab strip shared by markets.html and funding.html. */
+  .tabs { display: flex; gap: 4px 22px; flex-wrap: wrap; border-bottom: 1px solid var(--border); margin: 18px 0 0; }
+  .tabs a, .tabs button {
+    background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px;
+    padding: 8px 0; color: var(--muted); font: inherit; font-size: 15px; font-weight: 600;
+    text-decoration: none; cursor: pointer; white-space: nowrap;
+  }
+  .tabs a:hover, .tabs button:hover { color: var(--text); }
+  .tabs [aria-current="page"], .tabs [aria-pressed="true"] { color: var(--text); border-bottom-color: var(--teal); }
 
   .toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 22px 0 14px; }
   .search { flex: 1 1 240px; position: relative; }
@@ -196,7 +202,7 @@
 
   @media (max-width: 600px) {
     header .brand img { width: 100%; }
-    h1 { font-size: 26px; }
+    h1 { font-size: 28px; }
   }
 </style>
 </head>
@@ -213,7 +219,7 @@
         </a>
       <nav>
         <a href="lookup.html">Look up a wallet</a>
-        <a href="funding.html" aria-current="page">Funding Rates</a>
+        <a href="markets.html" aria-current="page">Markets</a>
         <a href="index.html#features">Features</a>
         <a href="index.html#how">How it works</a>
       </nav>
@@ -225,6 +231,15 @@
       <h1>Funding Rates &amp; APR</h1>
       <p class="sub">Every perpetual market on Hyperliquid — crypto plus the builder-deployed stock, commodity, forex, and index perps — with its current hourly funding rate annualized to APR. Positive APR means longs are paying shorts (crowded long); negative means shorts are paying longs.</p>
     </div>
+
+    <nav class="tabs" aria-label="Market views">
+      <a href="markets.html#gainers">Gainers</a>
+      <a href="markets.html#losers">Losers</a>
+      <a href="markets.html#oi">Open interest</a>
+      <a href="markets.html#listings">New listings</a>
+      <a href="markets.html#whales">Whale positioning</a>
+      <a href="funding.html" aria-current="page">Funding rates</a>
+    </nav>
 
     <div class="toolbar">
       <div class="search">

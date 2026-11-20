@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Surf Whale — Hyperliquid Markets: gainers, losers, open interest, new listings</title>
+<meta name="description" content="Every Hyperliquid perpetual market in one table: biggest gainers and losers, open interest and how it changed, new listings, and which side tracked whales are on." />
+<link rel="icon" type="image/png" href="assets/logo-96.png" />
+<link rel="canonical" href="https://surfwhale.io/markets" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Surf Whale" />
+<meta property="og:url" content="https://surfwhale.io/markets" />
+<meta property="og:title" content="Surf Whale — Hyperliquid Markets: gainers, losers, open interest, new listings" />
+<meta property="og:description" content="Every Hyperliquid perpetual market in one table: biggest gainers and losers, open interest and how it changed, new listings, and which side tracked whales are on." />
+<meta property="og:image" content="https://surfwhale.io/assets/og-1200x630.jpg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="Surf Whale: Hyperliquid whale intelligence. Follow the money, ride the wave." />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Surf Whale — Hyperliquid Markets: gainers, losers, open interest, new listings" />
+<meta name="twitter:description" content="Every Hyperliquid perpetual market in one table: biggest gainers and losers, open interest and how it changed, new listings, and which side tracked whales are on." />
+<meta name="twitter:image" content="https://surfwhale.io/assets/og-1200x630.jpg" />
+<style>
+  :root {
+    --bg: #0b0e11;
+    --panel: #14181d;
+    --panel-2: #1a1f26;
+    --border: #262b31;
+    --text: #e6e9ec;
+    --muted: #8a939d;
+    /* Was #5c6570: 3.0:1 on --panel, under the 4.5:1 floor for the 11-13px
+       text it is used on. This is 4.8:1 on --panel-2, its darkest-contrast ground. */
+    --faint: #838b96;
+    --teal: #4ecdc4;
+    --sunset-1: #ff9a76;
+    --sunset-2: #f4708a;
+    --sunset-3: #8b6fb3;
+    --accent: #4f8cff;
+    --positive: #34d399;
+    --positive-bg: rgba(52, 211, 153, 0.1);
+    --negative: #f87171;
+    --negative-bg: rgba(248, 113, 113, 0.1);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    line-height: 1.5;
+  }
+  a { color: inherit; }
+  /* One visible keyboard focus ring for every link and control. */
+  :focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px 64px; }
+
+  header {
+    display: flex; align-items: center; justify-content: space-between; padding: 24px 0;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+  .brand img { width: 40px; height: 40px; border-radius: 10px; object-fit: cover; }
+  .brand span { font-size: 19px; font-weight: 700; letter-spacing: -0.02em; color: var(--text); }
+
+  /* Header lockup, scoped so a footer reusing .brand keeps its small round
+     badge. 600px is set by measurement, not taste: the tagline glyphs are
+     34px in the source artwork, so at this crop width they land near 12px --
+     the floor for readable text. At 320px they were 6px. */
+  header .brand { gap: 0; text-decoration: none; align-self: flex-start; }
+  header .brand img {
+    display: block;
+    width: 600px;
+    max-width: 100%;
+    height: auto;
+    border-radius: 0;
+    object-fit: initial;
+    /* Fades dissolve the wave trail and candles the crop cuts through, and
+       must never touch the whale: its right edge sits at 77% of this crop and
+       its bottom at 88%, so they start at 84% and 93%. */
+    -webkit-mask-image:
+      linear-gradient(to right, #000 84%, transparent 100%),
+      linear-gradient(to bottom, #000 93%, transparent 100%);
+    -webkit-mask-composite: source-in;
+    mask-image:
+      linear-gradient(to right, #000 84%, transparent 100%),
+      linear-gradient(to bottom, #000 93%, transparent 100%);
+    mask-composite: intersect;
+  }
+
+  header nav a { text-decoration: none; color: var(--muted); font-size: 18px; }
+  header nav a:hover { color: var(--text); }
+  /* Every page lists the same four links. They wrap as whole links, never
+     mid-phrase, and the lockup keeps its 600px until the header stacks. */
+  header { gap: 12px 24px; }
+  header .brand { flex: 0 1 600px; min-width: 0; }
+  header nav { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px 28px; }
+  header nav a { white-space: nowrap; }
+  header nav a[aria-current="page"] { color: var(--text); }
+  @media (max-width: 900px) {
+    header { flex-direction: column; align-items: flex-start; }
+    header .brand { flex: 0 0 auto; }
+    header nav { justify-content: flex-start; }
+  }
+  /* Phones used to get no navigation at all (display: none). */
+  @media (max-width: 600px) {
+    header nav { gap: 4px 20px; }
+    header nav a { font-size: 15px; }
+  }
+  header nav { flex: 1 1 0; min-width: 0; align-self: flex-start; }
+  @media (max-width: 900px) { header nav { flex: 0 0 auto; } }
+
+  .page-head { padding: 8px 0 20px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--teal); margin-bottom: 12px;
+  }
+  .eyebrow .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 3px rgba(78,205,196,0.2); }
+  h1 { font-size: 36px; font-weight: 700; margin: 0 0 10px; letter-spacing: -0.02em; line-height: 1.2; }
+  .sub { color: var(--muted); font-size: 15px; margin: 0; max-width: 68ch; }
+
+  /* Tab strip shared by markets.html and funding.html. */
+  .tabs { display: flex; gap: 4px 22px; flex-wrap: wrap; border-bottom: 1px solid var(--border); margin: 18px 0 0; }
+  .tabs a, .tabs button {
+    background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px;
+    padding: 8px 0; color: var(--muted); font: inherit; font-size: 15px; font-weight: 600;
+    text-decoration: none; cursor: pointer; white-space: nowrap;
+  }
+  .tabs a:hover, .tabs button:hover { color: var(--text); }
+  .tabs [aria-current="page"], .tabs [aria-pressed="true"] { color: var(--text); border-bottom-color: var(--teal); }
+
+  .toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 22px 0 14px; }
+  .search { flex: 1 1 240px; position: relative; }
+  .search input {
+    width: 100%; background: var(--panel); border: 1px solid var(--border);
+    color: var(--text); border-radius: 8px; padding: 9px 12px 9px 34px;
+    font-size: 14px; outline: none; transition: border-color 0.15s;
+  }
+  .search input:focus { border-color: var(--teal); }
+  .search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); opacity: 0.5; }
+  .meta { color: var(--faint); font-size: 12.5px; white-space: nowrap; }
+  .meta b { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 14px; }
+  .chip {
+    border: 1px solid var(--border); background: var(--panel); color: var(--muted);
+    padding: 5px 12px; border-radius: 20px; font-size: 12.5px; font-weight: 600;
+    cursor: pointer; transition: all 0.12s; user-select: none; font-family: inherit;
+  }
+  .chip:hover { border-color: var(--faint); color: var(--text); }
+  .chip.active { background: var(--teal); border-color: var(--teal); color: #06201d; }
+  .cat-tag { font-size: 10.5px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; }
+
+  .table-container {
+    overflow-x: auto; overflow-y: auto; max-height: 68vh;
+    border: 1px solid var(--border); border-radius: 10px; background: var(--panel);
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 640px; }
+  thead th {
+    position: sticky; top: 0; z-index: 1; background: var(--panel-2); text-align: right;
+    padding: 10px 14px; font-weight: 600; color: var(--muted); font-size: 11.5px;
+    letter-spacing: 0.04em; text-transform: uppercase; border-bottom: 1px solid var(--border);
+    cursor: pointer; user-select: none; white-space: nowrap;
+  }
+  thead th:first-child { text-align: left; }
+  thead th:hover { color: var(--text); }
+  thead th .arrow { display: inline-block; width: 10px; opacity: 0.6; font-size: 10px; }
+  tbody td {
+    padding: 9px 14px; text-align: right; border-bottom: 1px solid var(--border);
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  tbody td:first-child { text-align: left; font-weight: 600; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--panel-2); }
+
+  .apr-pill {
+    display: inline-block; padding: 3px 9px; border-radius: 20px;
+    font-weight: 700; font-size: 12.5px; font-variant-numeric: tabular-nums;
+  }
+  .apr-pos { background: var(--positive-bg); color: var(--positive); }
+  .apr-neg { background: var(--negative-bg); color: var(--negative); }
+  .apr-zero { color: var(--faint); }
+
+  .dim { color: var(--faint); }
+  .empty-row td, .loading-row td { text-align: center; color: var(--faint); padding: 32px; }
+
+  tbody tr.row-clickable { cursor: pointer; }
+  .chevron { display: inline-block; width: 12px; color: var(--faint); font-size: 10px; margin-right: 4px; transition: transform 0.12s; }
+  .chevron.open { transform: rotate(90deg); }
+  .detail-row td { background: var(--panel-2); padding: 16px 18px; border-bottom: 1px solid var(--border); }
+  .detail-wrap { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+  .detail-chart { flex: 1 1 420px; }
+  .detail-stats { flex: 0 0 200px; display: flex; flex-direction: column; gap: 6px; }
+  .detail-stats .stat-label { color: var(--faint); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .detail-stats .stat-value { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .detail-loading { color: var(--faint); font-size: 13px; padding: 8px 0; }
+
+  footer { margin-top: 18px; color: var(--faint); font-size: 12px; }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 6px; }
+
+  @media (max-width: 600px) {
+    header .brand img { width: 100%; }
+    h1 { font-size: 28px; }
+  }
+
+  table { min-width: 1010px; }
+  /* The market name stays put while the other nine columns scroll sideways. */
+  thead th:first-child, tbody td:first-child { position: sticky; left: 0; }
+  thead th:first-child { z-index: 2; }
+  tbody td:first-child { background: var(--panel); }
+  tbody tr:hover td:first-child { background: var(--panel-2); }
+  @media (max-width: 600px) {
+    thead th, tbody td { padding-left: 10px; padding-right: 10px; }
+  }
+  .dex-tag {
+    display: inline-block; margin-left: 6px; padding: 0 6px; border: 1px solid var(--border);
+    border-radius: 20px; font-size: 10.5px; font-weight: 600; color: var(--faint); vertical-align: 1px;
+  }
+  .chg-pos { color: var(--positive); font-weight: 600; }
+  .chg-neg { color: var(--negative); font-weight: 600; }
+  .wcell { display: inline-flex; align-items: center; gap: 8px; }
+  /* Long share of whale dollars: the fill is the long side, the track the short side. */
+  .wbar { display: inline-block; width: 56px; height: 6px; border-radius: 3px; background: var(--negative); overflow: hidden; }
+  .wbar i { display: block; height: 100%; background: var(--positive); }
+  .new-tag { color: var(--teal); font-weight: 600; }
+  .notes { margin-top: 14px; color: var(--faint); font-size: 12px; max-width: 86ch; }
+  .notes p { margin: 0 0 6px; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <a class="brand" href="index.html">
+          <picture>
+            <source type="image/webp" srcset="assets/brand-600.webp 1x, assets/brand-1200.webp 2x" />
+            <img src="assets/brand-600.jpg" srcset="assets/brand-600.jpg 1x, assets/brand-1200.jpg 2x"
+                 width="600" height="229"
+                 alt="Surf Whale - Hyperliquid Whale Intelligence. Follow the Money. Ride the Wave." />
+          </picture>
+        </a>
+      <nav>
+        <a href="lookup.html">Look up a wallet</a>
+        <a href="markets.html" aria-current="page">Markets</a>
+        <a href="index.html#features">Features</a>
+        <a href="index.html#how">How it works</a>
+      </nav>
+    </header>
+
+    <div class="page-head">
+      <div class="eyebrow"><span class="dot"></span> Live prices &middot; whale data hourly</div>
+      <h1>Hyperliquid markets</h1>
+      <p class="sub">Every perpetual market on Hyperliquid in one table: what is moving, where open interest is building, what just listed, and which side the whales we track are on.</p>
+    </div>
+
+    <nav class="tabs" aria-label="Market views" id="tabs">
+      <button type="button" data-tab="gainers">Gainers</button>
+      <button type="button" data-tab="losers">Losers</button>
+      <button type="button" data-tab="oi">Open interest</button>
+      <button type="button" data-tab="listings">New listings</button>
+      <button type="button" data-tab="whales">Whale positioning</button>
+      <a href="funding.html">Funding rates</a>
+    </nav>
+
+    <div class="toolbar">
+      <div class="search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="search" type="text" aria-label="Filter markets by symbol" placeholder="Filter by symbol…" autocomplete="off">
+      </div>
+      <div class="meta"><b id="visible-count">—</b> of <b id="total-count">—</b> markets &middot; <span id="updated-at">loading…</span></div>
+    </div>
+
+    <div class="chips" id="chips"></div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th data-key="symbol" style="text-align:left">Market <span class="arrow"></span></th>
+            <th data-key="category" style="text-align:left">Type <span class="arrow"></span></th>
+            <th data-key="mark">Price <span class="arrow"></span></th>
+            <th data-key="chg">24h <span class="arrow"></span></th>
+            <th data-key="vol24h">24h volume <span class="arrow"></span></th>
+            <th data-key="oiUsd">Open interest <span class="arrow"></span></th>
+            <th data-key="oi24">OI 24h <span class="arrow"></span></th>
+            <th data-key="oi7">OI 7d <span class="arrow"></span></th>
+            <th data-key="whaleShare">Whales long <span class="arrow"></span></th>
+            <th data-key="listedTs">Listed <span class="arrow"></span></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"><tr class="loading-row"><td colspan="10">Loading markets…</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="notes">
+      <p id="tab-note"></p>
+      <p><b>Whales long</b> is the share of dollars held long among the whales we track that have a position in that market, with the number of those whales after it. Each whale's positions are re-read about twice a day, so this is a stance, not a tick-by-tick feed. Markets with fewer than three whales show a dash.</p>
+      <p><b>OI 24h</b> and <b>OI 7d</b> compare open interest in dollars with our own hourly samples. Hyperliquid only publishes the current figure, so a market shows a dash until we have a sample that old.</p>
+      <p><b>Listed</b> is the market's first funding payment, which lands within an hour of the listing. Type tags on builder-deployed markets are Surf Whale's own classification.</p>
+      <p><a href="mailto:admin@surfwhale.io" style="color:inherit;">admin@surfwhale.io</a></p>
+    </div>
+  </div>
+
+<script>
+const HL_INFO_URL = 'https://api.hyperliquid.xyz/info';
+const LOCAL = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+// Same convention as funding.html (a local page talks to a local API), with
+// ?api=prod to preview the page against the live feed.
+const API_BASE = (LOCAL && new URLSearchParams(location.search).get('api') !== 'prod')
+  ? 'http://localhost:8001' : 'https://api.surfwhale.io';
+
+const CORE = 'hyperliquid';
+const MOVER_MIN_VOLUME = 1e6;
+const MIN_WHALES = 3;
+const NEW_DAYS = 30;
+
+// The page has two sources and works with either one alone. REPORT is our
+// hourly feed (listing dates, past open interest, whale positioning, and the
+// last sampled prices); LIVE is Hyperliquid read from the browser. Live
+// values win where both exist.
+let REPORT = null;     // { as_of, dexes, markets }
+let LIVE = {};         // hlName -> { mark, prev, vol, oi, funding }
+let LIVE_AT = null;
+let ROWS = [];
+
+const TABS = {
+  gainers:  { key: 'chg', dir: -1, filter: r => r.chg != null && r.vol24h >= MOVER_MIN_VOLUME,
+              note: 'Gainers and losers leave out markets with under $1M traded in the last 24 hours, where a few trades can move the price a long way.' },
+  losers:   { key: 'chg', dir: 1, filter: r => r.chg != null && r.vol24h >= MOVER_MIN_VOLUME,
+              note: 'Gainers and losers leave out markets with under $1M traded in the last 24 hours, where a few trades can move the price a long way.' },
+  oi:       { key: 'oiUsd', dir: -1, filter: () => true, note: '' },
+  listings: { key: 'listedTs', dir: -1, filter: r => r.listedTs != null, note: 'Newest markets first. A market listed in the last 30 days is marked new.' },
+  whales:   { key: 'whaleUsd', dir: -1, filter: r => r.whaleN >= MIN_WHALES, note: 'Sorted by the dollars our tracked whales hold in each market, long and short together.' },
+};
+let activeTab = TABS[location.hash.slice(1)] ? location.hash.slice(1) : 'gainers';
+let sortKey = TABS[activeTab].key;
+let sortDir = TABS[activeTab].dir;
+let activeCategory = 'All';
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+async function fetchReport() {
+  try {
+    const res = await fetch(`${API_BASE}/api/public/markets`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data && data.markets && data.markets.length ? data : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+async function fetchDexLive(dex) {
+  const body = dex === CORE ? { type: 'metaAndAssetCtxs' } : { type: 'metaAndAssetCtxs', dex };
+  const res = await fetch(HL_INFO_URL, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error('Hyperliquid API error ' + res.status);
+  const [meta, ctxs] = await res.json();
+  const out = {};
+  meta.universe.forEach((u, i) => {
+    const c = ctxs[i] || {};
+    if (u.isDelisted) return;
+    out[u.name] = {
+      dex,
+      mark: parseFloat(c.markPx || 0),
+      prev: parseFloat(c.prevDayPx || 0),
+      vol: parseFloat(c.dayNtlVlm || 0),
+      oi: parseFloat(c.openInterest || 0),
+      funding: parseFloat(c.funding || 0),
+    };
+  });
+  return out;
+}
+
+async function fetchLive() {
+  // The venues worth asking about are the ones our feed saw activity on;
+  // without the feed, fall back to the two the funding page uses.
+  const dexes = REPORT ? REPORT.dexes : [CORE, 'xyz'];
+  const results = await Promise.allSettled(dexes.map(fetchDexLive));
+  const live = {};
+  let ok = 0;
+  results.forEach(r => { if (r.status === 'fulfilled') { Object.assign(live, r.value); ok++; } });
+  return ok ? live : null;
+}
+
+function pct(now, then) {
+  return (now > 0 && then > 0) ? (now / then - 1) * 100 : null;
+}
+
+function buildRows() {
+  const rep = {};
+  if (REPORT) REPORT.markets.forEach(m => rep[m.hl_name] = m);
+  const names = new Set([...Object.keys(rep), ...Object.keys(LIVE)]);
+  const rows = [];
+  names.forEach(name => {
+    const m = rep[name];
+    const l = LIVE[name];
+    const mark = l ? l.mark : (m ? m.mark_px : 0) || 0;
+    const prev = l ? l.prev : (m ? m.prev_day_px : 0) || 0;
+    const vol = l ? l.vol : (m ? m.day_ntl_vlm : 0) || 0;
+    const oiCoins = l ? l.oi : (m ? m.oi : 0) || 0;
+    const oiUsd = oiCoins * mark;
+    if (!(oiUsd > 0) && !(vol > 0)) return;
+    const dex = m ? m.dex : l.dex;
+    const wl = m && m.whale_long_usd != null ? m.whale_long_usd : null;
+    const ws = m && m.whale_short_usd != null ? m.whale_short_usd : null;
+    const whaleN = m && m.whale_longs != null ? m.whale_longs + m.whale_shorts : 0;
+    const whaleUsd = wl != null ? wl + ws : 0;
+    const listedTs = m && m.listed_at ? Date.parse(m.listed_at) : null;
+    rows.push({
+      hlName: name,
+      symbol: m ? m.symbol : name.replace(/^[^:]*:/, ''),
+      dex,
+      category: m ? m.category : (dex === CORE ? 'Crypto' : 'Other'),
+      mark, vol24h: vol, oiUsd,
+      chg: pct(mark, prev),
+      oi24: m ? pct(oiUsd, m.oi_usd_24h_ago) : null,
+      oi7: m ? pct(oiUsd, m.oi_usd_7d_ago) : null,
+      whaleN, whaleUsd, whaleLongUsd: wl, whaleShortUsd: ws,
+      whaleShare: (whaleN >= MIN_WHALES && whaleUsd > 0) ? wl / whaleUsd * 100 : null,
+      listedTs,
+    });
+  });
+  ROWS = rows;
+}
+
+const CATEGORY_COLORS = {
+  Crypto: 'var(--teal)', Stock: 'var(--sunset-2)', ETF: '#2dd4bf', Commodity: '#eab308',
+  Index: '#818cf8', Forex: '#38bdf8', Other: 'var(--faint)'
+};
+
+function fmtPct(v, digits) { return (v >= 0 ? '+' : '') + v.toFixed(digits) + '%'; }
+function fmtUsd(v) {
+  if (v >= 1e9) return '$' + (v / 1e9).toFixed(2) + 'B';
+  if (v >= 1e6) return '$' + (v / 1e6).toFixed(2) + 'M';
+  if (v >= 1e3) return '$' + (v / 1e3).toFixed(1) + 'K';
+  return '$' + v.toFixed(0);
+}
+function fmtPrice(v) {
+  if (!v) return '—';
+  if (v >= 1000) return v.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  if (v >= 1) return v.toFixed(4);
+  return v.toPrecision(4);
+}
+function fmtDate(ts) {
+  return new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+}
+function changeCell(v, digits) {
+  if (v == null) return '<span class="dim">—</span>';
+  const cls = v > 0 ? 'chg-pos' : (v < 0 ? 'chg-neg' : 'dim');
+  return '<span class="' + cls + '">' + fmtPct(v, digits) + '</span>';
+}
+function whaleCell(r) {
+  if (r.whaleShare == null) return '<span class="dim">—</span>';
+  const title = fmtUsd(r.whaleLongUsd) + ' long, ' + fmtUsd(r.whaleShortUsd) + ' short across ' + r.whaleN.toLocaleString() + ' tracked whales';
+  return '<span class="wcell" title="' + esc(title) + '"><span class="wbar"><i style="width:' + r.whaleShare.toFixed(0) + '%"></i></span>' +
+    r.whaleShare.toFixed(0) + '% <span class="dim">&middot; ' + r.whaleN.toLocaleString() + '</span></span>';
+}
+function listedCell(r) {
+  if (r.listedTs == null) return '<span class="dim">—</span>';
+  const days = Math.floor((Date.now() - r.listedTs) / 86400000);
+  if (days < NEW_DAYS) {
+    const age = days <= 0 ? 'today' : (days === 1 ? '1 day ago' : days + ' days ago');
+    return '<span class="new-tag">New</span> <span class="dim">&middot; ' + age + '</span>';
+  }
+  return '<span class="dim">' + fmtDate(r.listedTs) + '</span>';
+}
+
+function tabRows() {
+  return ROWS.filter(TABS[activeTab].filter);
+}
+
+function renderChips() {
+  const shown = tabRows();
+  const cats = ['All', ...Array.from(new Set(shown.map(r => r.category))).sort()];
+  if (!cats.includes(activeCategory)) activeCategory = 'All';
+  const counts = { All: shown.length };
+  shown.forEach(r => counts[r.category] = (counts[r.category] || 0) + 1);
+  document.getElementById('chips').innerHTML = cats.map(c =>
+    '<button type="button" class="chip' + (c === activeCategory ? ' active' : '') + '" aria-pressed="' + (c === activeCategory) + '" data-cat="' + esc(c) + '">' + esc(c) + ' (' + counts[c] + ')</button>'
+  ).join('');
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      activeCategory = chip.dataset.cat;
+      renderChips();
+      render();
+      const active = document.querySelector('.chip.active');
+      if (active) active.focus();
+    });
+  });
+}
+
+function renderTabs() {
+  document.querySelectorAll('#tabs button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tab === activeTab)));
+  document.getElementById('tab-note').textContent = TABS[activeTab].note;
+  document.getElementById('tab-note').style.display = TABS[activeTab].note ? '' : 'none';
+}
+
+function renderArrows() {
+  document.querySelectorAll('thead th').forEach(th => {
+    const on = th.dataset.key === sortKey;
+    th.querySelector('.arrow').textContent = on ? (sortDir === -1 ? '▼' : '▲') : '';
+    th.setAttribute('aria-sort', on ? (sortDir === -1 ? 'descending' : 'ascending') : 'none');
+  });
+}
+
+function render() {
+  const q = document.getElementById('search').value.trim().toUpperCase();
+  const inTab = tabRows();
+  let rows = inTab.filter(r => (!q || r.symbol.toUpperCase().includes(q)) && (activeCategory === 'All' || r.category === activeCategory));
+  rows = rows.slice().sort((a, b) => {
+    const av = a[sortKey], bv = b[sortKey];
+    if (av == null && bv == null) return 0;
+    if (av == null) return 1;   // missing values sort last in both directions
+    if (bv == null) return -1;
+    if (typeof av === 'string') return av.localeCompare(bv) * sortDir;
+    return (av - bv) * sortDir;
+  });
+
+  document.getElementById('visible-count').textContent = rows.length;
+  document.getElementById('total-count').textContent = ROWS.length;
+  renderArrows();
+
+  const tbody = document.getElementById('tbody');
+  if (rows.length === 0) {
+    const why = q ? 'No markets match "' + esc(q) + '"'
+      : (activeTab === 'listings' || activeTab === 'whales') && !REPORT ? 'This view needs Surf Whale data, which did not load. Try refreshing.'
+      : 'No markets to show.';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="10">' + why + '</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(r =>
+    '<tr>' +
+      '<td>' + esc(r.symbol) + (r.dex === CORE ? '' : '<span class="dex-tag" title="Builder-deployed market on the ' + esc(r.dex) + ' venue">' + esc(r.dex) + '</span>') + '</td>' +
+      '<td style="text-align:left"><span class="cat-tag" style="color:' + (CATEGORY_COLORS[r.category] || 'var(--faint)') + '">' + esc(r.category) + '</span></td>' +
+      '<td>' + fmtPrice(r.mark) + '</td>' +
+      '<td>' + changeCell(r.chg, 2) + '</td>' +
+      '<td class="dim">' + fmtUsd(r.vol24h) + '</td>' +
+      '<td>' + fmtUsd(r.oiUsd) + '</td>' +
+      '<td>' + changeCell(r.oi24, 1) + '</td>' +
+      '<td>' + changeCell(r.oi7, 1) + '</td>' +
+      '<td>' + whaleCell(r) + '</td>' +
+      '<td>' + listedCell(r) + '</td>' +
+    '</tr>'
+  ).join('');
+}
+
+function renderStatus() {
+  const t = d => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const parts = [];
+  parts.push(LIVE_AT ? 'live prices ' + t(LIVE_AT) : 'prices from our last hourly sample');
+  parts.push(REPORT && REPORT.as_of ? 'whale data ' + t(new Date(REPORT.as_of)) : 'whale data unavailable');
+  document.getElementById('updated-at').textContent = parts.join(' · ');
+}
+
+function setTab(tab, push) {
+  activeTab = tab;
+  sortKey = TABS[tab].key;
+  sortDir = TABS[tab].dir;
+  if (push) history.replaceState(null, '', '#' + tab);
+  renderTabs();
+  renderChips();
+  render();
+}
+
+document.querySelectorAll('#tabs button').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab, true)));
+window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (TABS[h] && h !== activeTab) setTab(h, false); });
+
+document.querySelectorAll('thead th').forEach(th => {
+  th.tabIndex = 0;
+  th.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); th.click(); }
+  });
+  th.addEventListener('click', () => {
+    const key = th.dataset.key;
+    if (sortKey === key) { sortDir *= -1; } else { sortKey = key; sortDir = -1; }
+    render();
+  });
+});
+document.getElementById('search').addEventListener('input', render);
+
+async function refreshLive() {
+  const live = await fetchLive();
+  if (live) { LIVE = live; LIVE_AT = new Date(); }
+}
+
+async function load(withReport) {
+  if (withReport) {
+    const report = await fetchReport();
+    if (report) REPORT = report;
+  }
+  await refreshLive();
+  if (!REPORT && !LIVE_AT) {
+    document.getElementById('tbody').innerHTML = '<tr class="empty-row"><td colspan="10">Could not load market data. Try refreshing.</td></tr>';
+    document.getElementById('updated-at').textContent = 'load failed';
+    return;
+  }
+  buildRows();
+  renderStatus();
+  renderTabs();
+  renderChips();
+  render();
+}
+
+load(true);
+// Prices every minute, the hourly feed every ten. A hidden tab does neither.
+let ticks = 0;
+setInterval(() => { if (!document.hidden) load(++ticks % 10 === 0); }, 60000);
+</script>
+<!-- Cloudflare Web Analytics: counts only browsers that run JS, so crawlers stay out of the pageview number. -->
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "649c57850c8c41389109101d0358cd08"}'></script>
+</body>
+</html>
